@@ -26,7 +26,7 @@
 
 ---
 
-**👉 [Contact me on Telegram](https://t.me/butter991011)**
+**👉 [Contact me on Telegram](https://t.me/richbeta312)**
 
 ### Trading VPS
 **This VPS service delivers ultra-low latency and reliable performance specifically optimized for MEV trading bots. Benefit from faster execution speeds, dedicated resources, and 24/7 uptime to maximize your trading advantage.**
@@ -594,7 +594,7 @@ pm2 save
 pm2 startup
 ```
 
-**👉 [Contact me on Telegram for MEV Bot Support](https://t.me/butter991011)**
+**👉 [Contact me on Telegram for MEV Bot Support](https://t.me/richbeta312)**
 
 **✅ Congratulations! Your multi-chain MEV bot is now running and searching for profitable arbitrage opportunities!**
 
@@ -708,7 +708,7 @@ tokens: {
 
 #### Direct Contact
 
-- 💬 **Telegram**: [@devstorm2576916](https://t.me/butter991011)
+- 💬 **Telegram**: [@devstorm2576916](https://t.me/richbeta312)
 
 ### 💰 Payment & Donations
 
@@ -1249,7 +1249,7 @@ This repository ranks for: **multi-chain mev bot**, **ethereum mev bot**, **bnb 
 
 ---
 
-**👉 [Contact me on Telegram for MEV Bot Questions](https://t.me/butter991011)**
+**👉 [Contact me on Telegram for MEV Bot Questions](https://t.me/richbeta312)**
 
 <div align="center">
 
@@ -1263,7 +1263,7 @@ This repository ranks for: **multi-chain mev bot**, **ethereum mev bot**, **bnb 
 
 ### 🔗 Quick Links for MEV Bot
 
-[🚀 Get Started](#-quick-start---deploy-your-multi-chain-mev-bot-in-5-minutes) • [🌐 Multi-Chain Setup](MULTI_CHAIN_SETUP.md) • [📖 Documentation](#-multi-chain-mev-bot-documentation) • [❓ FAQ](#-faq---multi-chain-mev-bot-questions) • [💬 Telegram Support](https://t.me/butter991011)
+[🚀 Get Started](#-quick-start---deploy-your-multi-chain-mev-bot-in-5-minutes) • [🌐 Multi-Chain Setup](MULTI_CHAIN_SETUP.md) • [📖 Documentation](#-multi-chain-mev-bot-documentation) • [❓ FAQ](#-faq---multi-chain-mev-bot-questions) • [💬 Telegram Support](https://t.me/richbeta312)
 
 ---
 
