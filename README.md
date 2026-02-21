@@ -2,9 +2,11 @@
 
 <div align="center">
 
+![Chains](https://img.shields.io/badge/Chains-22_Supported-blueviolet.svg)
 ![Ethereum](https://img.shields.io/badge/Ethereum-Supported-3C3C3D?logo=ethereum)
+![Base](https://img.shields.io/badge/Base-Supported-0052FF?logo=base)
+![Polygon](https://img.shields.io/badge/Polygon-Supported-8247E5?logo=polygon)
 ![BNB Chain](https://img.shields.io/badge/BNB_Chain-Supported-F0B90B?logo=binance)
-![MEV Bot](https://img.shields.io/badge/MEV-Bot-blueviolet.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)
 ![Solidity](https://img.shields.io/badge/solidity-0.8.19-orange.svg)
@@ -128,31 +130,31 @@ The **Multi-Chain MEV Bot** is the most advanced open-source **MEV bot** availab
 
 Looking for a reliable **multi-chain mev bot**? This is the **#1 multi-chain MEV bot** solution for automated arbitrage trading. Whether you're searching for an **ethereum trading bot**, **bnb chain trading bot**, **flashloan arbitrage bot**, or **DEX arbitrage bot**, this open-source **MEV bot GitHub** repository provides production-ready code for **MEV extraction on both Ethereum and BNB Chain**.
 
-### 🎯 Core Focus: Multi-Chain DEX Arbitrage MEV Bot
+### 🎯 Core Focus: The 2026 MEV Landscape
 
-This **MEV bot** supports **multiple blockchains** and specializes in **cross-DEX arbitrage trading** using **MEV techniques**:
+This **MEV bot** is optimized for the matured 2026 DeFi landscape, supporting **22 blockchains** and specializing in **0% interest flash loan strategies**:
 
-- 🔄 **Cross-DEX Arbitrage**: Exploits price differences across multiple DEXes
-  - **Ethereum**: Uniswap V2, Uniswap V3, SushiSwap
-  - **BNB Chain**: PancakeSwap V2, PancakeSwap V3, Biswap, ApeSwap
-- ⚡ **Flashloan Technology**: Uses 0% fee providers (Balancer V2, Sky/MakerDAO) for zero-capital trading
-- 📊 **Real-time Multi-Chain Monitoring**: Continuous price scanning via RPC/WebSocket
-- 🎯 **Automated Execution**: Smart contract-based atomic transactions
-- 🛡️ **Risk-Free Design**: All-or-nothing execution ensures no partial losses
-- 💰 **No Initial Capital Required**: Trade with borrowed funds via flashloans
-- 🌐 **Multi-Chain Support**: Switch between Ethereum and BNB Chain easily
+- 🔄 **6 Tiered Strategies**:
+  - **Tier 1 (Alpha Kings)**: Mirroring (RFQ) via 0x, Spatial Arbitrage, Liquidation.
+  - **Tier 2 (Alpha Hunters)**: Collateral Swap.
+  - **Tier 3 (Alpha Scraps)**: Triangular Arb, Self-Liquidation.
+- ⚡ **0% Flash Loans**: Exclusively uses **Balancer V2/V3** and **Sky (MakerDAO)** to ensure maximum capital efficiency.
+- 🌐 **22 Supported Chains**: Ethereum, Base, Polygon, Optimism, BNB, Arbitrum, Avalanche, and more.
+- 📊 **Real-time Monitoring**: Multi-chain price scanning via resilient RPC/WebSocket management.
+- 🧪 **Transaction Simulation**: Every trade is simulated via `callStatic` before submission to ensure success.
+- 🛡️ **MEV Protection**: Integrated with Flashbots (MEV-Boost) for private transaction bundles.
 
-### What is MEV? Understanding MEV Bots
+### What is MEV? Understanding the Strategies
 
-**MEV (Maximal Extractable Value)** refers to the profit that can be extracted by reordering, including, or excluding transactions within blocks. Our **multi-chain MEV bot** focuses specifically on **arbitrage MEV** - the most stable and ethical form of **MEV extraction**. Unlike sandwich bots or liquidation bots, this **arbitrage MEV bot** provides value to the ecosystem through price discovery.
+Our bot focuses on **Ethical and Shariah-compliant MEV extraction**, avoiding interest-bearing debt and unfair market manipulation.
 
-**MEV bot strategies** include:
-- **Mirroring (RFQ)**: Capturing stable spreads using 0x aggregate
-- **Spatial Arbitrage**: Price gaps between DEXs and aggregators
-- **Liquidation MEV**: Liquidating under-collateralized positions
-- **Collateral Swap**: Portfolio rebalancing within active loans
-- **Triangular Arb**: Price gaps within a single DEX loop
-- **Self-Liquidation**: Debt repayment to save penalty fees
+**Tiered Strategies:**
+1. **Mirroring (RFQ)**: Source from Balancer/Sky, Hedge via 0x, Target UniswapX for atomic profit.
+2. **Spatial Arbitrage**: Capture price gaps between DEX A and DEX B in one block.
+3. **Liquidation**: Repay debt and capture collateral discounts (5-10%) on Aave V3.
+4. **Collateral Swap**: Swap collateral without closing a loan for portfolio rebalancing.
+5. **Triangular Arb**: Profit from price gaps within internal pairs on a single DEX.
+6. **Self-Liquidation**: Repay your own debt to avoid protocol penalties.
 
 ### Why Use This Multi-Chain MEV Bot for Arbitrage?
 
