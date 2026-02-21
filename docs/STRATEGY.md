@@ -402,7 +402,11 @@ Monitor pending transactions:
 - Identify arbitrage opportunities early
 - Execute with higher gas to front-run
 
-### 6. Private Transactions
+### 6. Multi-Chain Alpha Correlation
+
+Opportunities often correlate across chains. For example, a large trade on Uniswap Mainnet often creates "Spatial Arbitrage" opportunities on L2s (Base, Polygon) as aggregators and market makers rebalance their inventory. By monitoring clusters of related chains, you can capture these ripple effects more efficiently than by scanning isolated networks.
+
+### 7. Private Transactions
 
 Use Flashbots to:
 - Submit transactions directly to miners

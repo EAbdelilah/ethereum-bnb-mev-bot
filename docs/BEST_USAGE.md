@@ -29,6 +29,28 @@ While the bot supports 22 chains, current data suggests the following focus:
 
 ---
 
+## 🚀 Scaling & Multi-Chain Strategy
+
+Should you monitor all 22+ supported chains? **Probably not.** Here is why "More is not always better" in MEV.
+
+### 1. The Latency Trap
+MEV is a race of milliseconds. If you run 20+ instances on a single VPS, the CPU context-switching and shared network bandwidth will increase your latency. A bot that finds 100 opportunities but is too slow to execute any of them will earn $0 and waste gas.
+
+### 2. The RPC Cost/Performance Ratio
+Each chain instance consumes significant "Compute Units" (CUs) from providers like Alchemy. Spreading your RPC budget thin across 20 low-volume chains is less effective than using a high-priority, low-latency endpoint for the Top 3 "Hot" chains.
+
+### 3. The "Cluster" Recommendation
+Instead of a "Wide Net," use a **"Focused Cluster"** approach:
+*   **Tier 1 Cluster (High Volume)**: Base, Polygon, Arbitrum. (Requires high performance, private RPCs).
+*   **Tier 2 Cluster (Emerging Alpha)**: Monad, Berachain, Unichain. (Lower competition, higher potential margins).
+
+**Hardware-to-Chain Ratio:**
+*   **Small VPS (2 Core / 4GB RAM)**: Max 3-4 instances.
+*   **Medium VPS (4 Core / 8GB RAM)**: Max 8-10 instances.
+*   **Dedicated Server**: For 20+ chains, use a dedicated server with high-clock CPU.
+
+---
+
 ## 🛠️ Infrastructure Requirements
 
 For production, your home internet and public RPCs are not enough.
