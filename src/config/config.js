@@ -107,7 +107,9 @@ module.exports = {
             triangularArb: process.env.STRATEGY_TRIANGULAR_ARB !== 'false',
             selfLiquidation: process.env.STRATEGY_SELF_LIQUIDATION !== 'false'
         },
-        defaultFlashLoanProvider: process.env.DEFAULT_FLASHLOAN_PROVIDER || 'balancer'
+        defaultFlashLoanProvider: process.env.DEFAULT_FLASHLOAN_PROVIDER || 'balancer',
+        useFlashbots: process.env.USE_FLASHBOTS === 'true',
+        flashbotsRelayUrl: process.env.FLASHBOTS_RELAY_URL || 'https://relay.flashbots.net'
     },
     
     // Telegram configuration

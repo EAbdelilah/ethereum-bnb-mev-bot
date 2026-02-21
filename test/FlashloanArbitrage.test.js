@@ -50,13 +50,16 @@ describe("FlashloanArbitrage", function () {
     await flashloanArbitrage.withdrawProfits(mockToken.address, amount);
     const finalBalance = await mockToken.balanceOf(owner.address);
 
-    expect(finalBalance.sub(initialBalance)).to.equal(amount);
+    expect(finalBalance.sub(initialBalance).toString()).to.equal(amount.toString());
   });
 
   it("Should fail if unauthorized caller tries to withdraw", async function () {
-    await expect(
-      flashloanArbitrage.connect(addr1).withdrawProfits(mockToken.address, 100)
-    ).to.be.revertedWith("OwnableUnauthorizedAccount");
+    try {
+      await flashloanArbitrage.connect(addr1).withdrawProfits(mockToken.address, 100);
+      expect.fail("Expected transaction to be reverted");
+    } catch (error) {
+      expect(error.message).to.contain("OwnableUnauthorizedAccount");
+    }
   });
 
   describe("receiveFlashLoan (Balancer)", function () {
@@ -93,12 +96,13 @@ describe("FlashloanArbitrage", function () {
 
       await mockToken.mint(fa.address, amount.add(1000));
 
-      await expect(fa.connect(owner).receiveFlashLoan(
+      const tx = await fa.connect(owner).receiveFlashLoan(
         [mockToken.address],
         [amount],
         [0],
         params
-      )).to.not.be.reverted;
+      );
+      await tx.wait();
     });
   });
 
@@ -137,13 +141,53 @@ describe("FlashloanArbitrage", function () {
 
       await mockToken.mint(fa.address, amount.add(ethers.utils.parseEther("1")));
 
-      await expect(fa.connect(owner).onFlashLoan(
+      const tx = await fa.connect(owner).onFlashLoan(
         owner.address,
         asset,
         amount,
         0,
         params
-      )).to.not.be.reverted;
+      );
+      await tx.wait();
     });
+
+    it("Should execute Mirroring (RFQ) successully", async function () {
+        const FlashloanArbitrage = await ethers.getContractFactory("FlashloanArbitrage");
+        const fa = await FlashloanArbitrage.deploy(
+          mockAavePool.address,
+          owner.address,
+          owner.address,
+          owner.address,
+          owner.address,
+          owner.address,
+          owner.address
+        );
+        await fa.deployed();
+
+        const asset = mockToken.address;
+        const amount = ethers.utils.parseEther("1");
+
+        const strategy = 0; // MirroringRFQ
+        // strategyData: (address reactor, bytes reactorData, address targetHedge, bytes hedgeData, address assetOut)
+        const strategyData = ethers.utils.defaultAbiCoder.encode(
+          ["address", "bytes", "address", "bytes", "address"],
+          [owner.address, "0x", owner.address, "0x", asset]
+        );
+
+        const params = ethers.utils.defaultAbiCoder.encode(
+          ["uint8", "bytes"],
+          [strategy, strategyData]
+        );
+
+        await mockToken.mint(fa.address, amount.add(1000));
+
+        const tx = await fa.connect(owner).receiveFlashLoan(
+          [asset],
+          [amount],
+          [0],
+          params
+        );
+        await tx.wait();
+      });
   });
 });

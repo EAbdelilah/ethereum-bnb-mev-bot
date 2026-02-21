@@ -17,14 +17,32 @@ class UniswapXMonitor {
      */
     async fetchOrders() {
         try {
-            // In a real implementation, you would call the actual UniswapX API
-            // and filter for orders that you can profitably fill.
-            // logger.debug('Fetching UniswapX orders...');
-            // const response = await axios.get(this.apiUrl);
-            // return response.data.orders;
-            return []; // Placeholder
+            // UniswapX public API endpoint for mainnet
+            const endpoint = 'https://api.uniswap.org/v2/uniswapx/orders?orderStatus=open&chainId=' + this.config.network.chainId;
+
+            logger.debug(`Fetching UniswapX orders from: ${endpoint}`);
+            const response = await axios.get(endpoint, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Origin': 'https://app.uniswap.org'
+                }
+            });
+
+            if (response.data && response.data.orders) {
+                logger.info(`Found ${response.data.orders.length} open UniswapX orders`);
+                return response.data.orders.map(order => ({
+                    hash: order.orderHash,
+                    inputToken: order.input.token,
+                    inputAmount: order.input.amount,
+                    outputToken: order.outputs[0].token,
+                    outputAmount: order.outputs[0].amount,
+                    reactor: order.reactor,
+                    encodedOrder: order.encodedOrder
+                }));
+            }
+            return [];
         } catch (error) {
-            logger.error('Error fetching UniswapX orders:', error);
+            logger.error('Error fetching UniswapX orders:', error.message);
             return [];
         }
     }

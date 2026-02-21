@@ -6,6 +6,7 @@
  */
 
 const { ethers } = require('ethers');
+const { FlashbotsBundleProvider } = require('@flashbots/ethers-provider-bundle');
 const BigNumber = require('bignumber.js');
 const cron = require('node-cron');
 
@@ -44,7 +45,7 @@ class ArbitrageBot {
         this.liquidationMonitor = new LiquidationMonitor(provider, config);
         this.uniswapXMonitor = new UniswapXMonitor(provider, config);
         this.gasEstimator = new GasEstimator(provider);
-        this.profitCalculator = new ProfitCalculator(config);
+        this.profitCalculator = new ProfitCalculator(config, provider);
         this.telegramNotifier = new TelegramNotifier(config);
         
         // Initialize contract
@@ -54,6 +55,12 @@ class ArbitrageBot {
             wallet
         );
         
+        // Flashbots initialization
+        this.flashbotsProvider = null;
+        if (config.bot.useFlashbots) {
+            this.initFlashbots();
+        }
+
         // State
         this.isRunning = false;
         this.opportunities = [];
@@ -70,6 +77,27 @@ class ArbitrageBot {
         };
     }
     
+    /**
+     * Initialize Flashbots provider
+     */
+    async initFlashbots() {
+        try {
+            // Flashbots needs a separate signing key for reputation
+            const authSigner = process.env.FLASHBOTS_AUTH_KEY
+                ? new ethers.Wallet(process.env.FLASHBOTS_AUTH_KEY)
+                : ethers.Wallet.createRandom();
+
+            this.flashbotsProvider = await FlashbotsBundleProvider.create(
+                this.provider,
+                authSigner,
+                this.config.bot.flashbotsRelayUrl || 'https://relay.flashbots.net'
+            );
+            logger.info('⚡ Flashbots provider initialized');
+        } catch (error) {
+            logger.error('❌ Failed to initialize Flashbots:', error.message);
+        }
+    }
+
     /**
      * Start the bot
      */
@@ -336,6 +364,18 @@ class ArbitrageBot {
             }
 
             // 2. Execute flashloan arbitrage
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(
+                    opportunity.token,
+                    ethers.utils.parseEther(tradeAmount.toString()),
+                    provider,
+                    params,
+                    800000,
+                    gasPrice
+                );
+                return;
+            }
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 opportunity.token,
                 ethers.utils.parseEther(tradeAmount.toString()),
@@ -348,8 +388,6 @@ class ArbitrageBot {
             );
             
             logger.info(`📝 Transaction submitted: ${tx.hash}`);
-            
-            // Wait for confirmation
             const receipt = await tx.wait();
             
             if (receipt.status === 1) {
@@ -509,6 +547,11 @@ class ArbitrageBot {
                 throw new Error(`UniswapX simulation failed: ${error.message}`);
             }
 
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(assetIn, amountIn, provider, params, 1200000, gasPrice);
+                return;
+            }
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 assetIn,
                 amountIn,
@@ -581,6 +624,11 @@ class ArbitrageBot {
                 throw new Error(`Liquidation simulation failed: ${error.message}`);
             }
 
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(debtAsset, debtAmount, provider, params, 1000000, gasPrice);
+                return;
+            }
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 debtAsset,
                 debtAmount,
@@ -600,6 +648,52 @@ class ArbitrageBot {
         } catch (error) {
             this.stats.failedTrades++;
             logger.error('❌ Liquidation execution failed:', error);
+        }
+    }
+
+    /**
+     * Execute transaction via Flashbots bundle
+     */
+    async executeFlashbotsBundle(asset, amount, provider, params, gasLimit, gasPrice) {
+        const blockNumber = await this.provider.getBlockNumber();
+
+        const transaction = {
+            to: this.arbitrageContract.address,
+            data: this.arbitrageContract.interface.encodeFunctionData('executeArbitrage', [
+                asset,
+                amount,
+                provider,
+                params
+            ]),
+            gasPrice: gasPrice,
+            gasLimit: gasLimit,
+            chainId: this.config.network.chainId,
+            nonce: await this.wallet.getTransactionCount()
+        };
+
+        const signedTransaction = await this.wallet.signTransaction(transaction);
+
+        const bundle = [
+            {
+                signedTransaction: signedTransaction
+            }
+        ];
+
+        logger.info(`🚀 Submitting Flashbots bundle for block ${blockNumber + 1}...`);
+        const bundleSubmission = await this.flashbotsProvider.sendBundle(bundle, blockNumber + 1);
+
+        if ('error' in bundleSubmission) {
+            throw new Error(`Flashbots error: ${bundleSubmission.error.message}`);
+        }
+
+        const waitResponse = await bundleSubmission.wait();
+        if (waitResponse === 0) {
+            this.stats.successfulTrades++;
+            logger.info('✅ Flashbots bundle included!');
+        } else if (waitResponse === 1) {
+            throw new Error('Flashbots bundle not included (nonce too high or not profitable for miner)');
+        } else {
+            throw new Error('Flashbots bundle simulation failed or skipped');
         }
     }
 

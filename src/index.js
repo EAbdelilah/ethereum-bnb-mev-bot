@@ -8,6 +8,7 @@
 require('dotenv').config();
 const { ethers } = require('ethers');
 const ArbitrageBot = require('./bot/ArbitrageBot');
+const ConnectionManager = require('./services/ConnectionManager');
 const logger = require('./utils/logger');
 const config = require('./config/config');
 
@@ -18,43 +19,26 @@ async function main() {
     try {
         const chainName = config.chain.name;
         const networkType = config.chain.isTestnet ? 'Testnet' : 'Mainnet';
-        const nativeSymbol = config.chain.nativeCurrency.symbol;
         
         logger.info(`🚀 Starting ${chainName} MEV Arbitrage Bot...`);
         logger.info(`📡 Chain: ${chainName} ${networkType} (Chain ID: ${config.network.chainId})`);
         logger.info(`💼 Wallet: ${config.wallet.address}`);
         
-        // Create provider with reconnection logic
-        let provider = new ethers.providers.WebSocketProvider(config.network.wssUrl);
-
-        const setupProvider = (wssProvider) => {
-            wssProvider._websocket.on('close', async (code) => {
-                logger.error(`📡 WebSocket connection closed (code: ${code}). Reconnecting...`);
-                // Wait 5 seconds before reconnecting
-                setTimeout(() => {
-                    provider = new ethers.providers.WebSocketProvider(config.network.wssUrl);
-                    setupProvider(provider);
-                    // Update bot and wallet with new provider if needed
-                    // In a production app, you might want to re-initialize the bot
-                }, 5000);
-            });
-
-            wssProvider._websocket.on('error', (error) => {
-                logger.error('📡 WebSocket error:', error);
-            });
-        };
-
-        setupProvider(provider);
-        
-        // Create wallet
-        const wallet = new ethers.Wallet(config.wallet.privateKey, provider);
-        
-        const balance = await wallet.getBalance();
-        logger.info(`💰 Wallet Balance: ${ethers.utils.formatEther(balance)} ${nativeSymbol}`);
+        // Initialize Connection Manager
+        const connManager = new ConnectionManager(config);
+        const { provider, wallet } = await connManager.createProvider();
         
         // Initialize bot
-        const bot = new ArbitrageBot(wallet, provider, config);
+        let bot = new ArbitrageBot(wallet, provider, config);
         
+        // Register reconnection handler
+        connManager.onReconnectCallback(async (newProvider, newWallet) => {
+            logger.info('🔄 Refreshing bot state after reconnection...');
+            // In a real production app, we re-initialize the bot or update its provider
+            bot = new ArbitrageBot(newWallet, newProvider, config);
+            await bot.start();
+        });
+
         // Start monitoring
         await bot.start();
         
