@@ -9,6 +9,7 @@ const { ethers } = require('ethers');
 const { FlashbotsBundleProvider } = require('@flashbots/ethers-provider-bundle');
 const BigNumber = require('bignumber.js');
 const cron = require('node-cron');
+const axios = require('axios');
 
 const PriceFetcher = require('../services/PriceFetcher');
 const LiquidationMonitor = require('../services/LiquidationMonitor');
@@ -509,9 +510,29 @@ class ArbitrageBot {
             const amountIn = order.inputAmount;
             const assetOut = order.outputToken;
 
-            // In a real bot, you'd get the 0x quote here
-            const targetHedge = this.config.contracts.zeroXExchangeProxy;
-            const hedgeData = "0x..."; // Encoded 0x swap data
+            let targetHedge = this.config.contracts.zeroXExchangeProxy;
+            let hedgeData = "0x";
+
+            // Get real 0x quote if API key is present
+            if (this.config.network.zeroXApiKey) {
+                const baseUrl = this.uniswapXMonitor.getZeroXBaseUrl(this.config.network.chainId);
+                const response = await axios.get(`${baseUrl}/swap/v1/quote`, {
+                    params: {
+                        buyToken: assetIn,
+                        sellToken: assetOut,
+                        sellAmount: order.outputAmount, // Amount we get from UniswapX
+                        takerAddress: this.arbitrageContract.address
+                    },
+                    headers: {
+                        '0x-api-key': this.config.network.zeroXApiKey
+                    }
+                });
+                targetHedge = response.data.to;
+                hedgeData = response.data.data;
+            } else {
+                logger.warn('No 0x API key configured. Using placeholder data for UniswapX fill.');
+                hedgeData = "0x00000000"; // Dummy data
+            }
 
             const strategyData = ethers.utils.defaultAbiCoder.encode(
                 ['address', 'bytes', 'address', 'bytes', 'address'],

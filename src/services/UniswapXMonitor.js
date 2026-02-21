@@ -56,12 +56,31 @@ class UniswapXMonitor {
             const amountIn = ethers.BigNumber.from(order.inputAmount);
             const minAmountOut = ethers.BigNumber.from(order.outputAmount);
 
-            // 2. Simulate hedge (e.g., via 0x API or Quoter)
-            // For production, you'd call 0x /swap/v1/quote here
-            // const hedgeQuote = await axios.get(`https://api.0x.org/swap/v1/quote?buyToken=${order.inputToken}&sellToken=${order.outputToken}&sellAmount=${minAmountOut}`);
+            let estimatedHedgeOutput;
 
-            // Placeholder: Assume 1% profit margin for simulation purposes if no API key
-            const estimatedHedgeOutput = amountIn.mul(101).div(100);
+            // 2. Simulate hedge (e.g., via 0x API or Quoter)
+            if (this.config.network.zeroXApiKey) {
+                try {
+                    const baseUrl = this.getZeroXBaseUrl(this.config.network.chainId);
+                    const response = await axios.get(`${baseUrl}/swap/v1/price`, {
+                        params: {
+                            buyToken: order.inputToken,
+                            sellToken: order.outputToken,
+                            sellAmount: minAmountOut.toString(),
+                        },
+                        headers: {
+                            '0x-api-key': this.config.network.zeroXApiKey
+                        }
+                    });
+                    estimatedHedgeOutput = ethers.BigNumber.from(response.data.buyAmount);
+                } catch (apiError) {
+                    logger.warn(`0x API error during profitability check: ${apiError.message}`);
+                    return false;
+                }
+            } else {
+                // Placeholder: Assume 1% profit margin for simulation purposes if no API key
+                estimatedHedgeOutput = amountIn.mul(101).div(100);
+            }
 
             // 3. Subtract gas costs
             const gasPrice = await this.provider.getGasPrice();
@@ -75,6 +94,23 @@ class UniswapXMonitor {
             logger.error('Error calculating UniswapX profitability:', error);
             return false;
         }
+    }
+
+    /**
+     * Get 0x API base URL based on chain ID
+     */
+    getZeroXBaseUrl(chainId) {
+        const urls = {
+            1: 'https://api.0x.org',
+            10: 'https://optimism.api.0x.org',
+            56: 'https://bsc.api.0x.org',
+            137: 'https://polygon.api.0x.org',
+            42161: 'https://arbitrum.api.0x.org',
+            43114: 'https://avalanche.api.0x.org',
+            8453: 'https://base.api.0x.org',
+            42220: 'https://celo.api.0x.org',
+        };
+        return urls[chainId] || 'https://api.0x.org';
     }
 }
 

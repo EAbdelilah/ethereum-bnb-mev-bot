@@ -54,7 +54,8 @@ module.exports = {
     network: {
         rpcUrl: rpcUrl,
         wssUrl: wssUrl,
-        chainId: finalChainId
+        chainId: finalChainId,
+        zeroXApiKey: process.env.ZEROX_API_KEY
     },
     
     // Wallet configuration
