@@ -17,7 +17,7 @@
 
 *Supports Ethereum & BNB Chain | Zero Capital Required | Production-Ready MEV Trading Bot*
 
-[Features](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Multi-Chain Setup](#-multi-chain-setup) • [UML Diagrams](#-uml-diagrams) • [Services](#-professional-services) • [Roadmap](#-roadmap)
+[Best Usage (Read This!)](docs/BEST_USAGE.md) • [Features](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Multi-Chain Setup](#-multi-chain-setup) • [UML Diagrams](#-uml-diagrams) • [Services](#-professional-services) • [Roadmap](#-roadmap)
 
 ---
 
@@ -737,6 +737,7 @@ Support Ethereum MEV development:
 - **[🚀 MEV Bot Setup Guide](docs/SETUP.md)**: Step-by-step MEV bot installation
 - **[📚 API Documentation](docs/API.md)**: Complete MEV bot API reference
 - **[📐 UML Diagrams](docs/UML_DIAGRAMS.md)**: MEV bot system architecture and design
+- **[🏆 Best Usage Guide](docs/BEST_USAGE.md)**: Optimal configuration for maximum profit
 - **[⚡ Quick Start](QUICKSTART.md)**: Deploy your MEV bot in 10 minutes
 
 ### MEV Bot Quick Reference Links
