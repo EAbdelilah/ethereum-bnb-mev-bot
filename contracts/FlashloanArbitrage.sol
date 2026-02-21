@@ -13,6 +13,34 @@ interface IAavePool {
         uint256 debtToCover,
         bool receiveAToken
     ) external;
+
+    function supply(
+        address asset,
+        uint256 amount,
+        address onBehalfOf,
+        uint16 referralCode
+    ) external;
+
+    function withdraw(
+        address asset,
+        uint256 amount,
+        address to
+    ) external returns (uint256);
+
+    function borrow(
+        address asset,
+        uint256 amount,
+        uint256 interestRateMode,
+        uint16 referralCode,
+        address onBehalfOf
+    ) external;
+
+    function repay(
+        address asset,
+        uint256 amount,
+        uint256 interestRateMode,
+        address onBehalfOf
+    ) external returns (uint256);
 }
 
 // Balancer V2 interfaces
@@ -341,13 +369,46 @@ contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownab
      * @dev Internal handler for Collateral Swap strategy
      */
     function _handleCollateralSwap(
-        address asset,
+        address debtAsset,
         uint256 amount,
         bytes memory strategyData
     ) internal returns (uint256) {
-        // Implementation logic for swapping collateral within a loan
-        // For now, returning borrowed amount to ensure repayment
-        return amount;
+        (
+            address collateralAsset,
+            address user,
+            address[] memory swapPath,
+            address[] memory routers,
+            uint24[] memory fees,
+            bool useV3
+        ) = abi.decode(strategyData, (address, address, address[], address[], uint24[], bool));
+
+        // 1. Repay existing debt with flashloan funds
+        IERC20(debtAsset).approve(aavePool, amount);
+        IAavePool(aavePool).repay(debtAsset, amount, 2, user); // 2 = Variable rate
+
+        // 2. Withdraw collateral
+        uint256 collateralToWithdraw = IERC20(collateralAsset).balanceOf(aavePool); // Simplified for logic
+        IAavePool(aavePool).withdraw(collateralAsset, type(uint256).max, address(this));
+
+        // 3. Swap old collateral to new collateral (first asset in swapPath is old collateral, last is new)
+        uint256 swappedAmount = _executeArbitrageTrades(
+            collateralAsset,
+            IERC20(collateralAsset).balanceOf(address(this)),
+            swapPath,
+            routers,
+            fees,
+            useV3
+        );
+
+        // 4. Supply new collateral
+        address newCollateral = swapPath[swapPath.length - 1];
+        IERC20(newCollateral).approve(aavePool, swappedAmount);
+        IAavePool(aavePool).supply(newCollateral, swappedAmount, user, 0);
+
+        // 5. Borrow debt back to repay flashloan
+        IAavePool(aavePool).borrow(debtAsset, amount, 2, 0, user);
+
+        return IERC20(debtAsset).balanceOf(address(this));
     }
 
     /**
@@ -358,8 +419,8 @@ contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownab
         uint256 amount,
         bytes memory strategyData
     ) internal returns (uint256) {
-        // Implementation logic for repaying own debt
-        return amount;
+        // Reuse liquidation logic, as the user in strategyData will be the bot/owner
+        return _handleLiquidation(asset, amount, strategyData);
     }
 
     /**

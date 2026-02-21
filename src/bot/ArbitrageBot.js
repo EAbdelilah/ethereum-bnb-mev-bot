@@ -207,16 +207,159 @@ class ArbitrageBot {
 
     /**
      * Scan for collateral swap opportunities
+     * Strategy: If health factor < 1.5, swap volatile collateral for stable collateral to avoid liquidation risk
      */
     async scanCollateralSwaps() {
-        // Implementation for collateral swaps
+        const user = this.wallet.address;
+        try {
+            const accountData = await this.liquidationMonitor.poolContract.getUserAccountData(user);
+            const healthFactor = parseFloat(ethers.utils.formatEther(accountData.healthFactor));
+
+            if (healthFactor < 1.5) {
+                logger.info(`🛡️ Health factor low (${healthFactor.toFixed(2)}). Checking for collateral swap...`);
+                const assets = await this.liquidationMonitor.getUserAssets(user);
+
+                if (assets && !this.isStablecoin(assets.collateralAsset)) {
+                    // Opportunity: Swap volatile collateral (like WETH) for stable collateral (USDC)
+                    const targetCollateral = this.config.tokens.usdc;
+                    const opportunity = {
+                        user,
+                        collateralAsset: assets.collateralAsset,
+                        targetAsset: targetCollateral,
+                        amount: assets.debtAmount // Simplified: Swap enough to cover debt
+                    };
+                    await this.executeCollateralSwap(opportunity);
+                }
+            }
+        } catch (error) {
+            logger.error('Error scanning for collateral swaps:', error.message);
+        }
     }
 
     /**
      * Scan for self-liquidation opportunities
+     * Strategy: If health factor < 1.05, liquidate self to avoid the protocol's 10% penalty
      */
     async scanSelfLiquidations() {
-        // Implementation for self-liquidations
+        const user = this.wallet.address;
+        try {
+            const accountData = await this.liquidationMonitor.poolContract.getUserAccountData(user);
+            const healthFactor = parseFloat(ethers.utils.formatEther(accountData.healthFactor));
+
+            if (healthFactor > 0 && healthFactor < 1.05) {
+                logger.warn(`🚨 SELF-LIQUIDATION ALERT! Health factor critical: ${healthFactor.toFixed(3)}`);
+                const assets = await this.liquidationMonitor.getUserAssets(user);
+                if (assets) {
+                    await this.executeSelfLiquidation(assets);
+                }
+            }
+        } catch (error) {
+            logger.error('Error scanning for self-liquidations:', error.message);
+        }
+    }
+
+    /**
+     * Helper to check if an asset is a stablecoin
+     */
+    isStablecoin(asset) {
+        const stables = [
+            this.config.tokens.usdc?.toLowerCase(),
+            this.config.tokens.usdt?.toLowerCase(),
+            this.config.tokens.dai?.toLowerCase()
+        ];
+        return stables.includes(asset.toLowerCase());
+    }
+
+    /**
+     * Execute Collateral Swap
+     */
+    async executeCollateralSwap(opportunity) {
+        logger.info('⚡ Executing Collateral Swap...', opportunity.collateralAsset);
+        this.stats.executedTrades++;
+
+        try {
+            const routers = [this.config.dexes.uniswapV2Router];
+            const swapPath = [opportunity.collateralAsset, opportunity.targetAsset];
+            const fees = [3000];
+
+            // (address collateralAsset, address user, address[] memory path, address[] memory routers, uint24[] memory fees, bool isV3)
+            const strategyData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'address', 'address[]', 'address[]', 'uint24[]', 'bool'],
+                [opportunity.collateralAsset, opportunity.user, swapPath, routers, fees, false]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.CollateralSwap, strategyData]
+            );
+
+            await this.submitBotTransaction(opportunity.collateralAsset, ethers.utils.parseEther("1"), params);
+        } catch (error) {
+            logger.error('❌ Collateral Swap failed:', error.message);
+        }
+    }
+
+    /**
+     * Execute Self Liquidation
+     */
+    async executeSelfLiquidation(assets) {
+        logger.info('⚡ Executing Self-Liquidation...', assets.user);
+        this.stats.executedTrades++;
+
+        try {
+            const routers = [this.config.dexes.uniswapV2Router];
+            const swapPath = [assets.collateralAsset, assets.debtAsset];
+            const fees = [3000];
+
+            const strategyData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'address', 'address[]', 'address[]', 'uint24[]', 'bool'],
+                [assets.collateralAsset, assets.user, swapPath, routers, fees, false]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.SelfLiquidation, strategyData]
+            );
+
+            await this.submitBotTransaction(assets.debtAsset, assets.debtAmount, params);
+        } catch (error) {
+            logger.error('❌ Self-Liquidation failed:', error.message);
+        }
+    }
+
+    /**
+     * Common submitter for bot transactions
+     */
+    async submitBotTransaction(asset, amount, params) {
+        const gasPrice = await this.gasEstimator.estimateGasPrice();
+        const providerName = this.config.bot.defaultFlashLoanProvider;
+        const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
+
+        // Simulate
+        try {
+            await this.arbitrageContract.callStatic.executeArbitrage(
+                asset,
+                amount,
+                provider,
+                params,
+                { gasPrice, gasLimit: 1000000 }
+            );
+            logger.info('✅ Strategy simulation successful');
+        } catch (error) {
+            throw new Error(`Simulation failed: ${error.message}`);
+        }
+
+        // Execute
+        const tx = await this.arbitrageContract.executeArbitrage(
+            asset,
+            amount,
+            provider,
+            params,
+            { gasPrice, gasLimit: 1000000 }
+        );
+        logger.info(`📝 Strategy submitted: ${tx.hash}`);
+        await tx.wait();
+        this.stats.successfulTrades++;
     }
 
     /**

@@ -107,45 +107,69 @@ class LiquidationMonitor {
      */
     async getUserAssets(user) {
         try {
-            // Use Aave V3 DataProvider to get user's reserves
-            // This is the production-ready way to get exact debt/collateral
-            const dataProviderAddress = this.config.network.chainId === 1
-                ? "0x7B4EBb9C2E1643666576F5E791788739BC4B31a3"
-                : (this.config.network.chainId === 137 ? "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe" : "");
+            const dataProviderAddress = this.getAaveDataProviderAddress(this.config.network.chainId);
 
             if (!dataProviderAddress) {
-                // Fallback for L2s without hardcoded data provider
-                return {
-                    debtAsset: this.config.tokens.weth,
-                    collateralAsset: this.config.tokens.usdc,
-                    debtAmount: ethers.utils.parseEther("1.0")
-                };
+                return null;
             }
 
             const dataProviderABI = [
-                "function getUserReservesData(address addressProvider, address user) external view returns (tuple(address underlyingAsset, uint256 currentATokenBalance, uint256 currentStableDebt, uint256 currentVariableDebt, uint256 principalStableDebt, uint256 scaledVariableDebt, uint256 stableBorrowRate, uint256 liquidityIndex, uint40 stableRateLastUpdated, bool usageAsCollateralEnabled)[], uint8 userConfig)"
+                "function getUserReservesData(address pool, address user) external view returns (tuple(address underlyingAsset, uint256 currentATokenBalance, uint256 currentStableDebt, uint256 currentVariableDebt, uint256 principalStableDebt, uint256 scaledVariableDebt, uint256 stableBorrowRate, uint256 liquidityIndex, uint40 stableRateLastUpdated, bool usageAsCollateralEnabled)[], uint8 userConfig)"
             ];
             const dataProvider = new ethers.Contract(dataProviderAddress, dataProviderABI, this.provider);
-            const addressProvider = this.config.contracts.aavePool; // Usually the address provider is what's needed
 
-            // In a real production environment, you'd call this and find the largest debt and collateral
-            // For now, providing the robust template:
-            /*
-            const [reservesData] = await dataProvider.getUserReservesData(addressProvider, user);
-            let largestDebt = { asset: null, amount: BigNumber.from(0) };
-            let largestCollateral = { asset: null, amount: BigNumber.from(0) };
-            // ... loop and find ...
-            */
+            // Fetch all reserves for the user
+            const [reservesData] = await dataProvider.getUserReservesData(this.config.contracts.aavePool, user);
 
-            return {
-                debtAsset: this.config.tokens.weth,
-                collateralAsset: this.config.tokens.usdc,
-                debtAmount: ethers.utils.parseEther("1.0")
-            };
+            let bestDebtAsset = null;
+            let maxDebtAmount = ethers.BigNumber.from(0);
+            let bestCollateralAsset = null;
+            let maxCollateralValue = ethers.BigNumber.from(0);
+
+            for (const reserve of reservesData) {
+                const totalDebt = reserve.currentStableDebt.add(reserve.currentVariableDebt);
+                if (totalDebt.gt(maxDebtAmount)) {
+                    maxDebtAmount = totalDebt;
+                    bestDebtAsset = reserve.underlyingAsset;
+                }
+
+                if (reserve.usageAsCollateralEnabled && reserve.currentATokenBalance.gt(maxCollateralValue)) {
+                    maxCollateralValue = reserve.currentATokenBalance;
+                    bestCollateralAsset = reserve.underlyingAsset;
+                }
+            }
+
+            if (bestDebtAsset && bestCollateralAsset && maxDebtAmount.gt(0)) {
+                return {
+                    debtAsset: bestDebtAsset,
+                    collateralAsset: bestCollateralAsset,
+                    debtAmount: maxDebtAmount.div(2) // Liquidate 50% (Aave V3 max close factor)
+                };
+            }
+
+            return null;
         } catch (error) {
             logger.error(`Error fetching assets for user ${user}:`, error.message);
             return null;
         }
+    }
+
+    /**
+     * Get Aave V3 Data Provider address based on chain ID
+     */
+    getAaveDataProviderAddress(chainId) {
+        const addresses = {
+            1: "0x7B4EBb9C2E1643666576F5E791788739BC4B31a3",      // Ethereum
+            10: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",     // Optimism
+            56: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",     // BNB Chain
+            137: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",    // Polygon
+            42161: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",  // Arbitrum
+            8453: "0x2d8A3C5677189723C4cB8873CfC9C8973Fdb3524",   // Base
+            43114: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",  // Avalanche
+            59144: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe",  // Linea
+            534352: "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe", // Scroll
+        };
+        return addresses[chainId] || "0x69FA688f1Dc34a4163486D569b39dd2252c78fDe"; // Default to common L2 DataProvider
     }
 }
 
