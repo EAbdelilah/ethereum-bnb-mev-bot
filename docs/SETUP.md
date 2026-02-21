@@ -236,6 +236,74 @@ Start the bot:
 pm2 start src/index.js --name "mev-bot"
 ```
 
+---
+
+## 🌐 Running on Multiple Chains (L2s)
+
+The bot supports running on 22+ different chains (Polygon, Base, Optimism, etc.) using dynamic RPC loading.
+
+### 1. Configure RPCs for Multiple Chains
+
+In your `.env` file, you can specify RPCs for each chain using their Chain ID:
+
+```env
+# Polygon (Chain ID 137)
+RPC_URL_137=https://polygon-mainnet.g.alchemy.com/v2/YOUR_KEY
+# Base (Chain ID 8453)
+RPC_URL_8453=https://base-mainnet.g.alchemy.com/v2/YOUR_KEY
+# Optimism (Chain ID 10)
+RPC_URL_10=https://opt-mainnet.g.alchemy.com/v2/YOUR_KEY
+```
+
+### 2. Run Single Instance
+
+To run the bot on a specific chain, set the `CHAIN_ID` environment variable:
+
+```bash
+# Run on Polygon
+CHAIN_ID=137 npm start
+
+# Run on Base
+CHAIN_ID=8453 npm start
+```
+
+### 3. Run Multiple Instances Simultaneously (Recommended)
+
+Use PM2 to manage multiple instances for different chains. Create a `ecosystem.config.js` file:
+
+```javascript
+module.exports = {
+  apps : [
+    {
+      name: 'mev-bot-polygon',
+      script: 'src/index.js',
+      env: {
+        CHAIN_ID: 137
+      }
+    },
+    {
+      name: 'mev-bot-base',
+      script: 'src/index.js',
+      env: {
+        CHAIN_ID: 8453
+      }
+    },
+    {
+      name: 'mev-bot-optimism',
+      script: 'src/index.js',
+      env: {
+        CHAIN_ID: 10
+      }
+    }
+  ]
+};
+```
+
+Then start all instances:
+```bash
+pm2 start ecosystem.config.js
+```
+
 Monitor:
 ```bash
 pm2 monit
