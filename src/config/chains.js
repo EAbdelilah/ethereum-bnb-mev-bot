@@ -21,9 +21,12 @@ const CHAINS = {
         // Flashloan provider
         flashloanProvider: {
             name: 'Aave V3',
-            address: process.env.AAVE_LENDING_POOL || '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9',
+            address: process.env.AAVE_LENDING_POOL || '0x87870B27F51f6b03397141047603a6020BCff228',
             fee: 0.0009 // 0.09%
         },
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        skyFlashMinter: '0x60C96F604a4441738F98931109A545385960cc72',
+        zeroXExchangeProxy: '0xDef1C0ded9bec7F1a1670819833240f027b25EfF',
         // DEX configuration
         dexes: {
             uniswapV2: {

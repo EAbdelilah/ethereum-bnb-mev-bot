@@ -10,12 +10,26 @@ const BigNumber = require('bignumber.js');
 const cron = require('node-cron');
 
 const PriceFetcher = require('../services/PriceFetcher');
+const LiquidationMonitor = require('../services/LiquidationMonitor');
+const UniswapXMonitor = require('../services/UniswapXMonitor');
 const GasEstimator = require('../services/GasEstimator');
 const ProfitCalculator = require('../services/ProfitCalculator');
 const TelegramNotifier = require('../services/TelegramNotifier');
 const logger = require('../utils/logger');
 
 const ARBITRAGE_ABI = require('../abis/FlashloanArbitrage.json');
+
+const Strategy = {
+    Arbitrage: 0,
+    Liquidation: 1,
+    UniswapXFilling: 2
+};
+
+const FlashLoanProvider = {
+    Aave: 0,
+    Balancer: 1,
+    Sky: 2
+};
 
 class ArbitrageBot {
     constructor(wallet, provider, config) {
@@ -25,6 +39,8 @@ class ArbitrageBot {
         
         // Initialize services
         this.priceFetcher = new PriceFetcher(provider, config);
+        this.liquidationMonitor = new LiquidationMonitor(provider, config);
+        this.uniswapXMonitor = new UniswapXMonitor(provider, config);
         this.gasEstimator = new GasEstimator(provider);
         this.profitCalculator = new ProfitCalculator(config);
         this.telegramNotifier = new TelegramNotifier(config);
@@ -115,38 +131,84 @@ class ArbitrageBot {
     }
     
     /**
-     * Scan for arbitrage opportunities
+     * Scan for arbitrage, liquidation, and UniswapX opportunities
      */
     async scanForOpportunities() {
+        // Strategy Selector Logic
+        if (this.config.bot.strategies.arbitrage) {
+            await this.scanArbitrage();
+        }
+
+        if (this.config.bot.strategies.liquidation) {
+            await this.scanLiquidations();
+        }
+
+        if (this.config.bot.strategies.uniswapX) {
+            await this.scanUniswapX();
+        }
+    }
+
+    /**
+     * Scan for arbitrage opportunities
+     */
+    async scanArbitrage() {
         const tokens = this.config.tokens.watchlist;
-        
+        const gasPrice = await this.gasEstimator.estimateGasPrice();
+        const providerName = this.config.bot.defaultFlashLoanProvider;
+        const isZeroFee = providerName === 'balancer' || providerName === 'sky';
+
         for (const token of tokens) {
             try {
-                // Fetch prices from multiple DEXes
                 const prices = await this.priceFetcher.fetchPrices(token);
-                
-                // Find arbitrage opportunities
                 const opportunity = this.findArbitrageOpportunity(token, prices);
                 
                 if (opportunity) {
                     this.stats.totalOpportunities++;
-                    logger.info('💎 Arbitrage opportunity found!', opportunity);
-                    
-                    // Calculate if profitable after gas
                     const isProfitable = await this.profitCalculator.isProfitable(
                         opportunity,
-                        await this.gasEstimator.estimateGasPrice()
+                        gasPrice,
+                        isZeroFee
                     );
                     
                     if (isProfitable) {
                         await this.executeArbitrage(opportunity);
-                    } else {
-                        logger.debug('Opportunity not profitable after gas fees');
                     }
                 }
             } catch (error) {
-                logger.error(`Error processing token ${token}:`, error);
+                logger.error(`Error processing arbitrage for ${token}:`, error);
             }
+        }
+    }
+
+    /**
+     * Scan for liquidations
+     */
+    async scanLiquidations() {
+        try {
+            const liquidations = await this.liquidationMonitor.scanForOpportunities();
+            for (const liq of liquidations) {
+                this.stats.totalOpportunities++;
+                await this.executeLiquidation(liq);
+            }
+        } catch (error) {
+            logger.error('Error scanning for liquidations:', error);
+        }
+    }
+
+    /**
+     * Scan for UniswapX orders
+     */
+    async scanUniswapX() {
+        try {
+            const orders = await this.uniswapXMonitor.fetchOrders();
+            for (const order of orders) {
+                if (await this.uniswapXMonitor.isProfitable(order)) {
+                    this.stats.totalOpportunities++;
+                    await this.executeUniswapXFill(order);
+                }
+            }
+        } catch (error) {
+            logger.error('Error scanning for UniswapX orders:', error);
         }
     }
     
@@ -199,26 +261,31 @@ class ArbitrageBot {
         this.stats.executedTrades++;
         
         try {
-            // Calculate optimal trade amount
             const tradeAmount = await this.calculateOptimalTradeAmount(opportunity);
-            
-            // Get DEX router addresses
             const routers = this.getRouterAddresses(opportunity);
             
-            // Encode parameters for flashloan
-            const params = this.encodeArbitrageParams(opportunity, routers);
+            // New encoding format: (Strategy strategy, bytes strategyData)
+            const arbitrageData = this.encodeArbitrageData(opportunity, routers);
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.Arbitrage, arbitrageData]
+            );
             
-            // Get current gas price
             const gasPrice = await this.gasEstimator.estimateGasPrice();
             
-            // Execute flashloan arbitrage
+            // Select provider based on configuration
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
+                            (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 opportunity.token,
                 ethers.utils.parseEther(tradeAmount.toString()),
+                provider,
                 params,
                 {
                     gasPrice: gasPrice,
-                    gasLimit: 500000
+                    gasLimit: 800000
                 }
             );
             
@@ -330,38 +397,132 @@ class ArbitrageBot {
     }
     
     /**
-     * Encode parameters for flashloan callback
+     * Execute UniswapX Fill
      */
-    encodeArbitrageParams(opportunity, routers) {
+    async executeUniswapXFill(order) {
+        logger.info('⚡ Executing UniswapX Fill...', order.hash);
+        this.stats.executedTrades++;
+
+        try {
+            // Strategy 3: UniswapX Filling
+            // Source: Balancer (0% Fee)
+            // Hedge: 0x Protocol (Gas Efficient)
+            // Target: UniswapX (Atomic Profit)
+
+            const assetIn = order.inputToken;
+            const amountIn = order.inputAmount;
+            const assetOut = order.outputToken;
+
+            // In a real bot, you'd get the 0x quote here
+            const targetHedge = this.config.contracts.zeroXExchangeProxy;
+            const hedgeData = "0x..."; // Encoded 0x swap data
+
+            const strategyData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'bytes', 'address', 'bytes', 'address'],
+                [order.reactor, order.encodedOrder, targetHedge, hedgeData, assetOut]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.UniswapXFilling, strategyData]
+            );
+
+            const gasPrice = await this.gasEstimator.estimateGasPrice();
+
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
+                            (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
+
+            const tx = await this.arbitrageContract.executeArbitrage(
+                assetIn,
+                amountIn,
+                provider,
+                params,
+                {
+                    gasPrice: gasPrice,
+                    gasLimit: 1200000
+                }
+            );
+
+            const receipt = await tx.wait();
+            if (receipt.status === 1) {
+                this.stats.successfulTrades++;
+                logger.info('✅ UniswapX Fill executed successfully!');
+            }
+        } catch (error) {
+            this.stats.failedTrades++;
+            logger.error('❌ UniswapX Fill execution failed:', error);
+        }
+    }
+
+    /**
+     * Execute liquidation
+     */
+    async executeLiquidation(liq) {
+        logger.info('⚡ Executing liquidation...', liq);
+        this.stats.executedTrades++;
+
+        try {
+            // This is a simplified example. In production, you'd fetch the actual
+            // debt and collateral assets for the specific user.
+            const debtAsset = this.config.tokens.weth;
+            const collateralAsset = this.config.tokens.usdc;
+            const debtAmount = ethers.utils.parseEther("1"); // Example amount
+
+            const routers = [this.config.dexes.uniswapV2Router, this.config.dexes.sushiswapRouter];
+            const swapPath = [collateralAsset, debtAsset];
+            const fees = [3000];
+
+            const liquidationData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'address', 'address[]', 'address[]', 'uint24[]', 'bool'],
+                [collateralAsset, liq.user, swapPath, routers, fees, false]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.Liquidation, liquidationData]
+            );
+
+            const gasPrice = await this.gasEstimator.estimateGasPrice();
+
+            const tx = await this.arbitrageContract.executeArbitrage(
+                debtAsset,
+                debtAmount,
+                FlashLoanProvider.Aave, // Aave flashloan for Aave liquidation is common
+                params,
+                {
+                    gasPrice: gasPrice,
+                    gasLimit: 1000000
+                }
+            );
+
+            const receipt = await tx.wait();
+            if (receipt.status === 1) {
+                this.stats.successfulTrades++;
+                logger.info('✅ Liquidation executed successfully!');
+            }
+        } catch (error) {
+            this.stats.failedTrades++;
+            logger.error('❌ Liquidation execution failed:', error);
+        }
+    }
+
+    /**
+     * Encode arbitrage data
+     */
+    encodeArbitrageData(opportunity, routers) {
         const wrappedNative = this.config.tokens.wrappedNative || this.config.tokens.weth || this.config.tokens.wbnb;
-        const path = [
-            opportunity.token,
-            wrappedNative,
-            opportunity.token
-        ];
+        const path = [opportunity.token, wrappedNative, opportunity.token];
+        const routerAddresses = [routers.buyRouter, routers.sellRouter];
         
-        const routerAddresses = [
-            routers.buyRouter,
-            routers.sellRouter
-        ];
-        
-        // Determine fee tiers based on DEX configuration
         const dexesFull = this.config.dexesFull || {};
         const buyDex = dexesFull[opportunity.buyDex];
         const sellDex = dexesFull[opportunity.sellDex];
         
-        // Default to 0.3% (3000) for Uniswap V3, but use chain-specific defaults
         let buyFee = 3000;
         let sellFee = 3000;
-        
-        // Convert fee percentage to fee tier
-        // 0.05% = 500, 0.2% = 2000, 0.25% = 2500, 0.3% = 3000, 1% = 10000
-        if (buyDex && buyDex.fee) {
-            buyFee = Math.round(buyDex.fee * 10000);
-        }
-        if (sellDex && sellDex.fee) {
-            sellFee = Math.round(sellDex.fee * 10000);
-        }
+        if (buyDex && buyDex.fee) buyFee = Math.round(buyDex.fee * 10000);
+        if (sellDex && sellDex.fee) sellFee = Math.round(sellDex.fee * 10000);
         
         const fees = [buyFee, sellFee];
         

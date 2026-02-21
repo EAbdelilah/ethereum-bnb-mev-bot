@@ -62,6 +62,9 @@ module.exports = {
     contracts: {
         arbitrageContract: process.env.ARBITRAGE_CONTRACT_ADDRESS,
         flashloanProvider: process.env.FLASHLOAN_PROVIDER || chainConfig.flashloanProvider.address,
+        aavePool: process.env.AAVE_POOL || chainConfig.flashloanProvider.address,
+        balancerVault: process.env.BALANCER_VAULT || chainConfig.balancerVault,
+        skyFlashMinter: process.env.SKY_FLASH_MINTER || chainConfig.skyFlashMinter,
         flashloanProviderName: chainConfig.flashloanProvider.name,
         flashloanFee: chainConfig.flashloanProvider.fee
     },
@@ -91,7 +94,13 @@ module.exports = {
         slippageTolerance: parseFloat(process.env.SLIPPAGE_TOLERANCE) || 0.5,
         checkInterval: parseInt(process.env.CHECK_INTERVAL) || 1000,
         maxTradeSize: parseFloat(process.env.MAX_TRADE_SIZE) || (chainName === 'bnb' ? 10 : 10), // Same for both
-        enableMempoolMonitoring: process.env.ENABLE_MEMPOOL_MONITORING === 'true'
+        enableMempoolMonitoring: process.env.ENABLE_MEMPOOL_MONITORING === 'true',
+        strategies: {
+            arbitrage: process.env.STRATEGY_ARBITRAGE !== 'false',
+            liquidation: process.env.STRATEGY_LIQUIDATION !== 'false',
+            uniswapX: process.env.STRATEGY_UNISWAPX !== 'false'
+        },
+        defaultFlashLoanProvider: process.env.DEFAULT_FLASHLOAN_PROVIDER || 'balancer'
     },
     
     // Telegram configuration

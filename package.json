@@ -31,26 +31,27 @@
   "author": "MEV Bot Team",
   "license": "MIT",
   "dependencies": {
+    "@aave/core-v3": "^1.19.3",
+    "@openzeppelin/contracts": "^5.4.0",
     "@uniswap/v2-periphery": "^1.1.0-beta.0",
     "@uniswap/v3-periphery": "^1.4.3",
-    "ethers": "^5.7.2",
-    "web3": "^1.10.0",
-    "dotenv": "^16.0.3",
     "axios": "^1.4.0",
-    "winston": "^3.8.2",
-    "telegraf": "^4.12.2",
     "bignumber.js": "^9.1.1",
+    "dotenv": "^16.0.3",
+    "ethers": "^5.7.2",
     "node-cron": "^3.0.2",
-    "redis": "^4.6.5"
+    "redis": "^4.6.5",
+    "telegraf": "^4.12.2",
+    "web3": "^1.10.0",
+    "winston": "^3.8.2"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
-    "hardhat": "^2.14.0",
     "chai": "^4.3.7",
     "eslint": "^8.40.0",
-    "nodemon": "^2.0.22",
-    "jest": "^29.5.0"
+    "hardhat": "^2.14.0",
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22"
   }
 }
-
