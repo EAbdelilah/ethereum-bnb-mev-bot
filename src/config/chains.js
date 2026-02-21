@@ -70,69 +70,202 @@ const CHAINS = {
     bnb: {
         name: 'BNB Chain',
         chainId: 56,
-        testnetChainId: 97, // BSC Testnet
-        nativeCurrency: {
-            name: 'BNB',
-            symbol: 'BNB',
-            decimals: 18
-        },
-        rpcUrl: process.env.BNB_RPC_URL,
-        wssUrl: process.env.BNB_WSS_URL,
-        testnetRpcUrl: process.env.BNB_TESTNET_RPC_URL,
-        testnetWssUrl: process.env.BNB_TESTNET_WSS_URL,
+        testnetChainId: 97,
+        nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
         blockExplorer: 'https://bscscan.com',
-        // Flashloan provider (0% fee)
-        flashloanProvider: {
-            name: 'PancakeSwap',
-            address: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', // Router/Vault for flash loans
-            fee: 0.0
-        },
-        aavePool: '', // Not applicable for BNB Chain typically
-        // DEX configuration
+        flashloanProvider: { name: 'PancakeSwap', address: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.0 },
         dexes: {
-            pancakeSwapV2: {
-                name: 'PancakeSwap V2',
-                router: process.env.PANCAKESWAP_V2_ROUTER || '0x10ED43C718714eb63d5aA57B78B54704E256024E',
-                factory: '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73',
-                fee: 0.0025 // 0.25%
-            },
-            pancakeSwapV3: {
-                name: 'PancakeSwap V3',
-                router: process.env.PANCAKESWAP_V3_ROUTER || '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4',
-                quoter: '0xB048Bbc1Ee6b733FFfCFb9e9CeF7375518e25997',
-                factory: '0x0BFbCF9fa4f9C56B0F40a671Ad40E0805A091865',
-                fee: 0.0025 // 0.25%
-            },
-            biswap: {
-                name: 'Biswap',
-                router: process.env.BISWAP_ROUTER || '0x3a6d8cA21D1CF76F653A67577FA0D27453350dD8',
-                factory: '0x858E3312ed3A876947EA49d572A7C42DE08af7EE',
-                fee: 0.002 // 0.2%
-            },
-            apeswap: {
-                name: 'ApeSwap',
-                router: process.env.APESWAP_ROUTER || '0xcF0feBd3f17CEf5b47b0cD257aCf6025c5BFf3b7',
-                factory: '0x0841BD0B734E4F5853f0dD8d7Ea041c241fb0Da6',
-                fee: 0.002 // 0.2%
-            }
+            pancakeSwapV3: { name: 'PancakeSwap V3', router: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.0025 }
         },
-        // Token addresses
         tokens: {
-            wrappedNative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-            usdc: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',
-            usdt: '0x55d398326f99059fF775485246999027B3197955',
-            dai: '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3',
-            busd: '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56',
-            eth: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8',
-            btc: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c',
-            watchlist: [
-                '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
-                '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
-                '0x55d398326f99059fF775485246999027B3197955', // USDT
-                '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI
-                '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56'  // BUSD
-            ]
+            wrappedNative: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c',
+            watchlist: ['0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c']
         }
+    },
+    optimism: {
+        name: 'Optimism',
+        chainId: 10,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://optimistic.etherscan.io',
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { uniswapV3: { name: 'Uniswap V3', router: '0xE592427A0AEce92De3Edee1F18E0157C05861564', fee: 0.003 } },
+        tokens: { wrappedNative: '0x4200000000000000000000000000000000000006', watchlist: ['0x4200000000000000000000000000000000000006'] }
+    },
+    polygon: {
+        name: 'Polygon',
+        chainId: 137,
+        nativeCurrency: { name: 'MATIC', symbol: 'MATIC', decimals: 18 },
+        blockExplorer: 'https://polygonscan.com',
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { quickswap: { name: 'QuickSwap', router: '0xa5E0829CaCEd8fFDD03942104b10503958965bb5', fee: 0.003 } },
+        tokens: { wrappedNative: '0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270', watchlist: ['0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270'] }
+    },
+    fantom: {
+        name: 'Fantom',
+        chainId: 250,
+        nativeCurrency: { name: 'Fantom', symbol: 'FTM', decimals: 18 },
+        blockExplorer: 'https://ftmscan.com',
+        flashloanProvider: { name: 'Equalizer', address: '0x3d6c57b685cC83f4bf23768aC42847a1bcB59D50', fee: 0.0 },
+        dexes: { spookySwap: { name: 'SpookySwap', router: '0xF491e7B69E4244ad4002BC14e878a34207E38c29', fee: 0.002 } },
+        tokens: { wrappedNative: '0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83', watchlist: ['0x21be370D5312f44cB42ce377BC9b8a0cEF1A4C83'] }
+    },
+    base: {
+        name: 'Base',
+        chainId: 8453,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://basescan.org',
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { baseSwap: { name: 'BaseSwap', router: '0x327Df1E6de05895d2d81ED4d17963C489f4630fF', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x4200000000000000000000000000000000000006', watchlist: ['0x4200000000000000000000000000000000000006'] }
+    },
+    arbitrum: {
+        name: 'Arbitrum',
+        chainId: 42161,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://arbiscan.io',
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { camelot: { name: 'Camelot', router: '0xc873fEcbd354f5A56E00E710B90EF42d211dd46d', fee: 0.003 } },
+        tokens: { wrappedNative: '0x82aF49447D8a07e3bd95BD0d56f35241523fBab1', watchlist: ['0x82aF49447D8a07e3bd95BD0d56f35241523fBab1'] }
+    },
+    avalanche: {
+        name: 'Avalanche',
+        chainId: 43114,
+        nativeCurrency: { name: 'AVAX', symbol: 'AVAX', decimals: 18 },
+        blockExplorer: 'https://snowtrace.io',
+        balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { traderJoe: { name: 'Trader Joe', router: '0x60aE616a2a41d3E87997914a34cd565600895000', fee: 0.003 } },
+        tokens: { wrappedNative: '0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7', watchlist: ['0xB31f66AA3C1e785363F0875A1B74E27b85FD66c7'] }
+    },
+    linea: {
+        name: 'Linea',
+        chainId: 59144,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://lineascan.build',
+        flashloanProvider: { name: 'Lynex', address: '0x327Df1E6de05895d2d81ED4d17963C489f4630fF', fee: 0.0 },
+        dexes: { lynex: { name: 'Lynex', router: '0x327Df1E6de05895d2d81ED4d17963C489f4630fF', fee: 0.0025 } },
+        tokens: { wrappedNative: '0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f', watchlist: ['0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f'] }
+    },
+    blast: {
+        name: 'Blast',
+        chainId: 81457,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://blastscan.io',
+        flashloanProvider: { name: 'Thruster', address: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.0 },
+        dexes: { thruster: { name: 'Thruster', router: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.003 } },
+        tokens: { wrappedNative: '0x4300000000000000000000000000000000000004', watchlist: ['0x4300000000000000000000000000000000000004'] }
+    },
+    scroll: {
+        name: 'Scroll',
+        chainId: 534352,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://scrollscan.com',
+        flashloanProvider: { name: 'Ambient', address: '0x327Df1E6de05895d2d81ED4d17963C489f4630fF', fee: 0.0 },
+        dexes: { ambient: { name: 'Ambient', router: '0x327Df1E6de05895d2d81ED4d17963C489f4630fF', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x5300000000000000000000000000000000000004', watchlist: ['0x5300000000000000000000000000000000000004'] }
+    },
+    mantle: {
+        name: 'Mantle',
+        chainId: 5000,
+        nativeCurrency: { name: 'Mantle', symbol: 'MNT', decimals: 18 },
+        blockExplorer: 'https://explorer.mantle.xyz',
+        flashloanProvider: { name: 'Agni', address: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.0 },
+        dexes: { agni: { name: 'Agni', router: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', fee: 0.0025 } },
+        tokens: { wrappedNative: '0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000', watchlist: ['0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000'] }
+    },
+    monad: {
+        name: 'Monad',
+        chainId: 143,
+        nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+        blockExplorer: 'https://monadscan.xyz',
+        flashloanProvider: { name: 'MonadFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { monadSwap: { name: 'MonadSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
+    },
+    berachain: {
+        name: 'Berachain',
+        chainId: 80094,
+        nativeCurrency: { name: 'BERA', symbol: 'BERA', decimals: 18 },
+        blockExplorer: 'https://berascan.com',
+        flashloanProvider: { name: 'Dolomite', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { bex: { name: 'BEX', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
+    },
+    sonic: {
+        name: 'Sonic',
+        chainId: 146,
+        nativeCurrency: { name: 'Sonic', symbol: 'S', decimals: 18 },
+        blockExplorer: 'https://sonicscan.org',
+        flashloanProvider: { name: 'SonicFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { sonicSwap: { name: 'SonicSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
+    },
+    worldchain: {
+        name: 'World Chain',
+        chainId: 480,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://worldscan.org',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { worldSwap: { name: 'WorldSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x4200000000000000000000000000000000000006', watchlist: [] }
+    },
+    abstract: {
+        name: 'Abstract',
+        chainId: 2741,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://explorer.abs.xyz',
+        flashloanProvider: { name: 'AbsFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { absSwap: { name: 'AbsSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
+    },
+    mode: {
+        name: 'Mode',
+        chainId: 34443,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://modescan.io',
+        flashloanProvider: { name: 'Balancer', address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8', fee: 0.0 },
+        dexes: { modeSwap: { name: 'ModeSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x4200000000000000000000000000000000000006', watchlist: [] }
+    },
+    celo: {
+        name: 'Celo',
+        chainId: 42220,
+        nativeCurrency: { name: 'Celo', symbol: 'CELO', decimals: 18 },
+        blockExplorer: 'https://celoscan.io',
+        flashloanProvider: { name: 'Moola', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { ubeswap: { name: 'Ubeswap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x471EcE3750Da237f93B8E2997353394935240238', watchlist: [] }
+    },
+    unichain: {
+        name: 'Unichain',
+        chainId: 130,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://unichain.org',
+        flashloanProvider: { name: 'UniFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { uniswapV4: { name: 'Uniswap V4', router: '0x0000000000000000000000000000000000000000', fee: 0.0005 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
+    },
+    ink: {
+        name: 'Ink',
+        chainId: 57073,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://inkscan.xyz',
+        flashloanProvider: { name: 'InkFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { inkSwap: { name: 'InkSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x4200000000000000000000000000000000000006', watchlist: [] }
+    },
+    plasma: {
+        name: 'Plasma',
+        chainId: 9745,
+        nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+        blockExplorer: 'https://plasmascan.org',
+        flashloanProvider: { name: 'PlasmaFlash', address: '0x0000000000000000000000000000000000000000', fee: 0.0 },
+        dexes: { plasmaSwap: { name: 'PlasmaSwap', router: '0x0000000000000000000000000000000000000000', fee: 0.0025 } },
+        tokens: { wrappedNative: '0x0000000000000000000000000000000000000000', watchlist: [] }
     }
 };
 

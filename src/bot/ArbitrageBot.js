@@ -78,6 +78,12 @@ class ArbitrageBot {
             logger.warn('Bot is already running');
             return;
         }
+
+        // Validate configuration for current chain
+        if (!this.config.contracts.balancerVault && !this.config.contracts.skyFlashMinter) {
+            logger.error(`❌ No 0% flash loan providers configured for ${this.config.chain.name}`);
+            return;
+        }
         
         this.isRunning = true;
         logger.info('🤖 ArbitrageBot started');

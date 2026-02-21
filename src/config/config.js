@@ -6,24 +6,27 @@
 require('dotenv').config();
 const { getChainConfig } = require('./chains');
 
-// Get chain from environment variable (default: ethereum)
+// Get chain/network identification
+const chainIdFromEnv = parseInt(process.env.CHAIN_ID);
 const chainName = (process.env.CHAIN || 'ethereum').toLowerCase();
 const isTestnet = process.env.NETWORK === 'testnet' || process.env.TESTNET === 'true';
 
 // Get chain configuration
 let chainConfig;
 try {
-    chainConfig = getChainConfig(chainName);
+    // Priority: CHAIN_ID > CHAIN (name)
+    chainConfig = getChainConfig(chainIdFromEnv || chainName);
 } catch (error) {
     console.error(`Error: ${error.message}`);
-    console.error(`Supported chains: ethereum, bnb`);
     process.exit(1);
 }
 
-// Determine which chain ID and RPC URLs to use
-const chainId = isTestnet ? chainConfig.testnetChainId : chainConfig.chainId;
-const rpcUrl = isTestnet ? (chainConfig.testnetRpcUrl || chainConfig.rpcUrl) : chainConfig.rpcUrl;
-const wssUrl = isTestnet ? (chainConfig.testnetWssUrl || chainConfig.wssUrl) : chainConfig.wssUrl;
+const finalChainId = chainIdFromEnv || (isTestnet ? chainConfig.testnetChainId : chainConfig.chainId);
+
+// Determine RPC URL (Priority: RPC_URL_{ID} > RPC_URL > chainConfig defaults)
+const rpcUrlByEnvId = process.env[`RPC_URL_${finalChainId}`];
+const rpcUrl = rpcUrlByEnvId || process.env.RPC_URL || (isTestnet ? (chainConfig.testnetRpcUrl || chainConfig.rpcUrl) : chainConfig.rpcUrl);
+const wssUrl = process.env.WSS_URL || (isTestnet ? (chainConfig.testnetWssUrl || chainConfig.wssUrl) : chainConfig.wssUrl);
 
 // Build DEX configuration object (flattened for backward compatibility)
 const dexes = {};
@@ -39,7 +42,7 @@ module.exports = {
     chain: {
         name: chainConfig.name,
         key: chainConfig.key || chainName,
-        chainId: parseInt(process.env.CHAIN_ID) || chainId,
+        chainId: finalChainId,
         isTestnet: isTestnet,
         nativeCurrency: chainConfig.nativeCurrency,
         blockExplorer: chainConfig.blockExplorer
@@ -47,9 +50,9 @@ module.exports = {
     
     // Network configuration
     network: {
-        rpcUrl: process.env.RPC_URL || rpcUrl,
-        wssUrl: process.env.WSS_URL || wssUrl,
-        chainId: parseInt(process.env.CHAIN_ID) || chainId
+        rpcUrl: rpcUrl,
+        wssUrl: wssUrl,
+        chainId: finalChainId
     },
     
     // Wallet configuration
