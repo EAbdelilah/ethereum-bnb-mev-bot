@@ -36,7 +36,7 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 1. **Price Discovery**: Monitor multiple DEXes simultaneously
 2. **Speed**: Execute trades before the opportunity disappears
-3. **Capital Efficiency**: Use flashloans to trade without upfront capital
+3. **Capital Efficiency**: Use 0% fee flashloans to trade without upfront capital
 4. **Gas Optimization**: Minimize transaction costs
 
 ---
@@ -58,7 +58,7 @@ In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infr
 | 7 | **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
 | 8 | **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
 
-### Part 2: The 9 Zero-Percent (0%) Providers
+### Part 2: The 0% Providers
 
 These protocols allow you to borrow millions of dollars for a 0% fee (excluding network gas), significantly improving arbitrage margins.
 
@@ -100,8 +100,8 @@ These protocols allow you to borrow millions of dollars for a 0% fee (excluding 
 
 **Ethical Considerations**: ⚠️ Controversial - can harm other traders
 
-### 3. 🎯 Liquidation Arbitrage (Future)
-**Description**: Monitor lending protocols (Aave, Compound) for undercollateralized positions and execute liquidations.
+3. **Liquidation Arbitrage (Current Implementation)**
+**Description**: Monitor lending protocols (Aave, Compound, Spark) for undercollateralized positions and execute liquidations.
 
 **Requirements**:
 - Monitor health factors of all positions
@@ -135,11 +135,11 @@ These protocols allow you to borrow millions of dollars for a 0% fee (excluding 
    └── Confirm profit > minimum threshold
 
 3. EXECUTION PHASE (Atomic Transaction)
-   ├── Request flashloan from Aave
+   ├── Request 0% flashloan (Balancer or Sky)
    ├── Receive borrowed tokens
    ├── Execute Swap 1 (Buy on cheaper DEX)
    ├── Execute Swap 2 (Sell on expensive DEX)
-   ├── Repay flashloan + premium
+   ├── Repay flashloan (0% fee)
    ├── Keep profit
    └── Transaction succeeds or reverts (no loss)
 
@@ -172,21 +172,21 @@ for each token in watchlist:
 ```
 Gross Profit = (SellPrice - BuyPrice) × Amount
 DEX Fees = Amount × 0.003 × 2  // 0.3% per swap
-Flashloan Fee = Amount × 0.0009  // 0.09% Aave fee
+Flashloan Fee = 0  // Using 0% providers
 Gas Cost = GasPrice × GasLimit
-Net Profit = Gross Profit - DEX Fees - Flashloan Fee - Gas Cost
+Net Profit = Gross Profit - DEX Fees - Gas Cost
 ```
 
 #### Step 3: Flashloan Arbitrage
 
 ```solidity
 // Pseudo-code for smart contract
-function executeArbitrage(token, amount) {
-    // 1. Request flashloan
-    flashloan(token, amount);
+function executeArbitrage(token, amount, provider) {
+    // 1. Request flashloan (Balancer or Sky)
+    flashloan(token, amount, provider);
 }
 
-function onFlashloanReceived(token, amount, premium) {
+function onFlashloanReceived(token, amount, fee) {
     // 2. Buy on cheaper DEX
     swapOnDexA(token, weth, amount);
     
@@ -194,10 +194,10 @@ function onFlashloanReceived(token, amount, premium) {
     swapOnDexB(weth, token, receivedAmount);
     
     // 4. Repay flashloan
-    repay(amount + premium);
+    repay(amount + fee);
     
     // 5. Keep profit
-    profit = balance - (amount + premium);
+    profit = balance - (amount + fee);
     require(profit > minProfit, "Insufficient profit");
 }
 ```
@@ -215,7 +215,7 @@ function onFlashloanReceived(token, amount, premium) {
 
 2. **Profit Calculator**
    - Estimates potential profit
-   - Accounts for all fees (DEX, flashloan, gas)
+   - Accounts for all fees (DEX, 0% flashloan, gas)
    - Calculates optimal trade size
 
 3. **Gas Estimator**
@@ -262,7 +262,7 @@ const amountOut = quoter.quoteExactInputSingle(
 
 1. **Minimum Profit Threshold**
    ```
-   Only execute if: NetProfit > MinThreshold (e.g., 0.01 ETH)
+   Only execute if: NetProfit > MinThreshold (e.g., 0.001 ETH with 0% fees)
    ```
 
 2. **Maximum Gas Price**
@@ -302,35 +302,35 @@ const amountOut = quoter.quoteExactInputSingle(
 
 ## Profitability Analysis
 
-### Cost Breakdown
+### Cost Breakdown (0% Fee Flashloan)
 
 ```
 Example Trade: 10 ETH arbitrage opportunity
 
 Revenue:
-  Price difference: 0.5% = 0.05 ETH
+  Price difference: 0.8% = 0.08 ETH
 
 Costs:
   Uniswap fee (0.3%):    0.03 ETH
   SushiSwap fee (0.3%):  0.03 ETH
-  Flashloan fee (0.09%): 0.009 ETH
+  Flashloan fee (0%):    0.000 ETH
   Gas cost (50 gwei):    0.015 ETH
   
-Total Cost: 0.084 ETH
-Net Profit: 0.05 - 0.084 = -0.034 ETH ❌
+Total Cost: 0.075 ETH
+Net Profit: 0.08 - 0.075 = 0.005 ETH ✅
 
-Conclusion: Not profitable
+Conclusion: Profitable with 0% fee flashloan
 ```
 
 ### Break-Even Analysis
 
 **Minimum price difference needed**:
 ```
-Break-even = DEX Fees + Flashloan Fee + Gas Cost
-           = 0.6% + 0.09% + 0.15%
-           = 0.84%
+Break-even = DEX Fees + Gas Cost
+           = 0.6% + 0.15%
+           = 0.75%
 
-Therefore: Need at least 0.84% price difference to break even
+Therefore: Need at least 0.75% price difference to break even (improved from 0.84% with Aave)
 Target: 1-2% difference for good profit margin
 ```
 
@@ -484,7 +484,7 @@ Arbitrage trading on Ethereum requires:
 
 - [Flashbots Documentation](https://docs.flashbots.net/)
 - [Uniswap V2 Whitepaper](https://uniswap.org/whitepaper.pdf)
-- [Aave Flashloan Guide](https://docs.aave.com/developers/guides/flash-loans)
+- [Balancer Flashloan Guide](https://docs.balancer.fi/guides/flash-loans.html)
 - [MEV Research](https://research.paradigm.xyz/)
 
 ---

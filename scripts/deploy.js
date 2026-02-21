@@ -13,7 +13,7 @@ async function main() {
     console.log("💰 Account balance:", (await deployer.getBalance()).toString());
     
     // Contract addresses (Ethereum Mainnet)
-    const AAVE_ADDRESS_PROVIDER = "0x2f39d218133AFaB8F2B819B1066c7E434Ad94E9e";
+    const AAVE_POOL = "0x87870B27F51f6b03397141047603a6020BCff228";
     const UNISWAP_V2_ROUTER = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
     const SUSHISWAP_ROUTER = "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F";
     const UNISWAP_V3_ROUTER = "0xE592427A0AEce92De3Edee1F18E0157C05861564";
@@ -24,7 +24,7 @@ async function main() {
     // Deploy contract
     const FlashloanArbitrage = await hre.ethers.getContractFactory("FlashloanArbitrage");
     const contract = await FlashloanArbitrage.deploy(
-        AAVE_ADDRESS_PROVIDER,
+        AAVE_POOL,
         UNISWAP_V2_ROUTER,
         SUSHISWAP_ROUTER,
         UNISWAP_V3_ROUTER,
@@ -41,7 +41,7 @@ async function main() {
     console.log(`ARBITRAGE_CONTRACT_ADDRESS=${contract.address}`);
     console.log("");
     console.log("🔍 Verify contract on Etherscan:");
-    console.log(`npx hardhat verify --network mainnet ${contract.address} ${AAVE_ADDRESS_PROVIDER} ${UNISWAP_V2_ROUTER} ${SUSHISWAP_ROUTER} ${UNISWAP_V3_ROUTER} ${BALANCER_VAULT} ${SKY_FLASH_MINTER} ${ZEROX_PROXY}`);
+    console.log(`npx hardhat verify --network mainnet ${contract.address} ${AAVE_POOL} ${UNISWAP_V2_ROUTER} ${SUSHISWAP_ROUTER} ${UNISWAP_V3_ROUTER} ${BALANCER_VAULT} ${SKY_FLASH_MINTER} ${ZEROX_PROXY}`);
 }
 
 main()

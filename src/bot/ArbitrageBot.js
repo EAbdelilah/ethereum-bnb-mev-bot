@@ -26,9 +26,8 @@ const Strategy = {
 };
 
 const FlashLoanProvider = {
-    Aave: 0,
-    Balancer: 1,
-    Sky: 2
+    Balancer: 0,
+    Sky: 1
 };
 
 class ArbitrageBot {
@@ -154,8 +153,6 @@ class ArbitrageBot {
     async scanArbitrage() {
         const tokens = this.config.tokens.watchlist;
         const gasPrice = await this.gasEstimator.estimateGasPrice();
-        const providerName = this.config.bot.defaultFlashLoanProvider;
-        const isZeroFee = providerName === 'balancer' || providerName === 'sky';
 
         for (const token of tokens) {
             try {
@@ -166,8 +163,7 @@ class ArbitrageBot {
                     this.stats.totalOpportunities++;
                     const isProfitable = await this.profitCalculator.isProfitable(
                         opportunity,
-                        gasPrice,
-                        isZeroFee
+                        gasPrice
                     );
                     
                     if (isProfitable) {
@@ -275,8 +271,7 @@ class ArbitrageBot {
             
             // Select provider based on configuration
             const providerName = this.config.bot.defaultFlashLoanProvider;
-            const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
-                            (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
 
             // 1. Simulate transaction (Static Call)
             logger.info('🧪 Simulating transaction...');
@@ -450,8 +445,7 @@ class ArbitrageBot {
             const gasPrice = await this.gasEstimator.estimateGasPrice();
 
             const providerName = this.config.bot.defaultFlashLoanProvider;
-            const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
-                            (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
 
             // Simulate UniswapX Fill
             logger.info('🧪 Simulating UniswapX Fill...');
@@ -522,13 +516,16 @@ class ArbitrageBot {
 
             const gasPrice = await this.gasEstimator.estimateGasPrice();
 
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
+
             // Simulate liquidation
             logger.info('🧪 Simulating liquidation...');
             try {
                 await this.arbitrageContract.callStatic.executeArbitrage(
                     debtAsset,
                     debtAmount,
-                    FlashLoanProvider.Aave,
+                    provider,
                     params,
                     {
                         gasPrice: gasPrice,
@@ -544,7 +541,7 @@ class ArbitrageBot {
             const tx = await this.arbitrageContract.executeArbitrage(
                 debtAsset,
                 debtAmount,
-                FlashLoanProvider.Aave, // Aave flashloan for Aave liquidation is common
+                provider,
                 params,
                 {
                     gasPrice: gasPrice,

@@ -9,15 +9,14 @@ const logger = require('../utils/logger');
 class ProfitCalculator {
     constructor(config) {
         this.config = config;
-        this.flashloanFee = 0.0009; // 0.09% Aave flashloan fee
-        this.zeroFee = 0.0; // 0% Balancer/Sky fee
+        this.flashloanFee = 0.0; // Only 0% fee providers used
         this.dexFee = 0.003; // 0.3% typical DEX fee
     }
     
     /**
      * Calculate potential profit for an arbitrage opportunity
      */
-    calculateProfit(opportunity, tradeAmount, gasPrice, isZeroFee = false) {
+    calculateProfit(opportunity, tradeAmount, gasPrice) {
         const amount = new BigNumber(tradeAmount);
         const buyPrice = new BigNumber(opportunity.buyPrice);
         const sellPrice = new BigNumber(opportunity.sellPrice);
@@ -27,9 +26,8 @@ class ProfitCalculator {
         const sellAmount = buyAmount.multipliedBy(sellPrice).dividedBy(buyPrice);
         const finalAmount = sellAmount.multipliedBy(1 - this.dexFee);
         
-        // Subtract flashloan fee
-        const currentFlashloanFee = isZeroFee ? this.zeroFee : this.flashloanFee;
-        const flashloanFeeAmount = amount.multipliedBy(currentFlashloanFee);
+        // Subtract flashloan fee (0% as requested)
+        const flashloanFeeAmount = amount.multipliedBy(this.flashloanFee);
         const netAmount = finalAmount.minus(amount).minus(flashloanFeeAmount);
         
         // Calculate gas cost
@@ -53,11 +51,11 @@ class ProfitCalculator {
     /**
      * Check if opportunity is profitable
      */
-    async isProfitable(opportunity, gasPrice, isZeroFee = false) {
+    async isProfitable(opportunity, gasPrice) {
         // Use standard trade amount
         const tradeAmount = this.config.bot.maxTradeSize || 1;
         
-        const profit = this.calculateProfit(opportunity, tradeAmount, gasPrice, isZeroFee);
+        const profit = this.calculateProfit(opportunity, tradeAmount, gasPrice);
         
         logger.debug('Profit calculation:', {
             grossProfit: profit.grossProfit.toFixed(6),

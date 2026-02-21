@@ -1,9 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import "@aave/core-v3/contracts/flashloan/base/FlashLoanSimpleReceiverBase.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+
+// Aave V3 interface for Liquidation (can be funded by other 0% flashloans)
+interface IAavePool {
+    function liquidationCall(
+        address collateralAsset,
+        address debtAsset,
+        address user,
+        uint256 debtToCover,
+        bool receiveAToken
+    ) external;
+}
 
 // Balancer V2 interfaces
 interface IFlashLoanRecipient {
@@ -75,15 +85,16 @@ interface IUniswapV3Router {
 
 /**
  * @title FlashloanArbitrage
- * @dev Advanced MEV bot contract for executing arbitrage opportunities using multi-provider flashloans (0% fee)
- * @notice This contract performs cross-DEX arbitrage with flashloans from Aave, Balancer, or Sky
+ * @dev Advanced MEV bot contract for executing arbitrage opportunities using 0% fee flashloans
+ * @notice This contract performs cross-DEX arbitrage with flashloans from Balancer or Sky
  */
-contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient, IERC3156FlashBorrower, Ownable {
+contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownable {
     
     // State variables
     address public immutable uniswapV2Router;
     address public immutable sushiswapRouter;
     address public immutable uniswapV3Router;
+    address public aavePool;
     address public balancerVault;
     address public skyFlashMinter;
     address public zeroXExchangeProxy;
@@ -131,22 +142,24 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
     
     /**
      * @dev Constructor
-     * @param _addressProvider Aave lending pool address provider
+     * @param _aavePool Aave lending pool address (for liquidations)
      * @param _uniswapV2Router Uniswap V2 router address
      * @param _sushiswapRouter SushiSwap router address
      * @param _uniswapV3Router Uniswap V3 router address
      * @param _balancerVault Balancer V2 Vault address
      * @param _skyFlashMinter Sky/MakerDAO Flash Minter address
+     * @param _zeroXExchangeProxy 0x Exchange Proxy address
      */
     constructor(
-        address _addressProvider,
+        address _aavePool,
         address _uniswapV2Router,
         address _sushiswapRouter,
         address _uniswapV3Router,
         address _balancerVault,
         address _skyFlashMinter,
         address _zeroXExchangeProxy
-    ) FlashLoanSimpleReceiverBase(IPoolAddressesProvider(_addressProvider)) Ownable(msg.sender) {
+    ) Ownable(msg.sender) {
+        aavePool = _aavePool;
         uniswapV2Router = _uniswapV2Router;
         sushiswapRouter = _sushiswapRouter;
         uniswapV3Router = _uniswapV3Router;
@@ -155,14 +168,14 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
         zeroXExchangeProxy = _zeroXExchangeProxy;
     }
     
-    enum FlashLoanProvider { Aave, Balancer, Sky }
+    enum FlashLoanProvider { Balancer, Sky }
     enum Strategy { Arbitrage, Liquidation, UniswapXFilling }
 
     /**
-     * @dev Execute arbitrage or liquidation with flashloan from a specific provider
+     * @dev Execute arbitrage or liquidation with flashloan from a specific provider (0% fee)
      * @param asset Token address to borrow
      * @param amount Amount to borrow
-     * @param provider Flashloan provider (0: Aave, 1: Balancer, 2: Sky)
+     * @param provider Flashloan provider (0: Balancer, 1: Sky)
      * @param params Encoded parameters for arbitrage execution
      */
     function executeArbitrage(
@@ -173,9 +186,7 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
     ) external onlyOwner {
         if (tx.gasprice > MAX_GAS_PRICE) revert InvalidParameters();
         
-        if (provider == FlashLoanProvider.Aave) {
-            POOL.flashLoanSimple(address(this), asset, amount, params, 0);
-        } else if (provider == FlashLoanProvider.Balancer) {
+        if (provider == FlashLoanProvider.Balancer) {
             IERC20[] memory tokens = new IERC20[](1);
             tokens[0] = IERC20(asset);
             uint256[] memory amounts = new uint256[](1);
@@ -186,20 +197,6 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
         }
     }
     
-    /**
-     * @dev Callback for Aave V3
-     */
-    function executeOperation(
-        address asset,
-        uint256 amount,
-        uint256 premium,
-        address initiator,
-        bytes calldata params
-    ) external override returns (bool) {
-        if (msg.sender != address(POOL)) revert UnauthorizedCaller();
-        return _handleFlashLoan(asset, amount, premium, params);
-    }
-
     /**
      * @dev Callback for Balancer V2
      */
@@ -258,13 +255,6 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
         // Calculate profit
         uint256 totalDebt = amount + premium;
         if (finalAmount <= totalDebt) revert InsufficientProfit();
-
-        uint256 profit = finalAmount - totalDebt;
-
-        // For Aave, we need to approve POOL to pull the debt
-        if (msg.sender == address(POOL)) {
-            IERC20(asset).approve(address(POOL), totalDebt);
-        }
 
         return true;
     }
@@ -354,10 +344,10 @@ contract FlashloanArbitrage is FlashLoanSimpleReceiverBase, IFlashLoanRecipient,
         ) = abi.decode(strategyData, (address, address, address[], address[], uint24[], bool));
 
         // 1. Approve Pool to spend debtAsset
-        IERC20(debtAsset).approve(address(POOL), amount);
+        IERC20(debtAsset).approve(aavePool, amount);
 
         // 2. Execute Liquidation
-        POOL.liquidationCall(collateralAsset, debtAsset, user, amount, false);
+        IAavePool(aavePool).liquidationCall(collateralAsset, debtAsset, user, amount, false);
 
         // 3. Get collateral balance
         uint256 collateralBalance = IERC20(collateralAsset).balanceOf(address(this));

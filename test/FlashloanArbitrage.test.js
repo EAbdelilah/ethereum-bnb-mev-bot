@@ -24,14 +24,10 @@ describe("FlashloanArbitrage", function () {
     mockAavePool = await MockAavePool.deploy();
     await mockAavePool.deployed();
 
-    const MockPoolAddressesProvider = await ethers.getContractFactory("MockPoolAddressesProvider");
-    const mockProvider = await MockPoolAddressesProvider.deploy(mockAavePool.address);
-    await mockProvider.deployed();
-
     // Deploy FlashloanArbitrage
     const FlashloanArbitrage = await ethers.getContractFactory("FlashloanArbitrage");
     flashloanArbitrage = await FlashloanArbitrage.deploy(
-      mockProvider.address,
+      mockAavePool.address,
       owner.address, // _uniswapV2Router (mock)
       owner.address, // _sushiswapRouter (mock)
       owner.address, // _uniswapV3Router (mock)
@@ -63,24 +59,19 @@ describe("FlashloanArbitrage", function () {
     ).to.be.revertedWith("OwnableUnauthorizedAccount");
   });
 
-  describe("executeOperation", function () {
+  describe("receiveFlashLoan (Balancer)", function () {
     it("Should execute arbitrage successfully", async function () {
       const MockUniswapRouter = await ethers.getContractFactory("MockUniswapRouter");
       const mockRouter = await MockUniswapRouter.deploy();
       await mockRouter.deployed();
 
-      // Redploy with real mock router
       const FlashloanArbitrage = await ethers.getContractFactory("FlashloanArbitrage");
-      const MockPoolAddressesProvider = await ethers.getContractFactory("MockPoolAddressesProvider");
-      const mockProvider = await MockPoolAddressesProvider.deploy(mockAavePool.address);
-      await mockProvider.deployed();
-
       const fa = await FlashloanArbitrage.deploy(
-        mockProvider.address,
+        mockAavePool.address,
         mockRouter.address,
         mockRouter.address,
         mockRouter.address,
-        owner.address,
+        owner.address, // mock balancer vault
         owner.address,
         owner.address
       );
@@ -88,7 +79,6 @@ describe("FlashloanArbitrage", function () {
 
       const asset = mockToken.address;
       const amount = ethers.utils.parseEther("1");
-      const premium = 0;
 
       const strategy = 0; // Arbitrage
       const strategyData = ethers.utils.defaultAbiCoder.encode(
@@ -101,48 +91,31 @@ describe("FlashloanArbitrage", function () {
         [strategy, strategyData]
       );
 
-      // Give fa some tokens to cover debt if needed (though mock router gives profit)
       await mockToken.mint(fa.address, amount.add(1000));
 
-      // Impersonate POOL
-      await network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [mockAavePool.address],
-      });
-      const poolSigner = await ethers.getSigner(mockAavePool.address);
-
-      // Ensure poolSigner has some ETH for gas
-      await owner.sendTransaction({
-        to: mockAavePool.address,
-        value: ethers.utils.parseEther("1")
-      });
-
-      await expect(fa.connect(poolSigner).executeOperation(
-        asset,
-        amount,
-        premium,
-        owner.address,
+      await expect(fa.connect(owner).receiveFlashLoan(
+        [mockToken.address],
+        [amount],
+        [0],
         params
       )).to.not.be.reverted;
     });
+  });
 
+  describe("onFlashLoan (Sky)", function () {
     it("Should execute liquidation successfully", async function () {
       const MockUniswapRouter = await ethers.getContractFactory("MockUniswapRouter");
       const mockRouter = await MockUniswapRouter.deploy();
       await mockRouter.deployed();
 
       const FlashloanArbitrage = await ethers.getContractFactory("FlashloanArbitrage");
-      const MockPoolAddressesProvider = await ethers.getContractFactory("MockPoolAddressesProvider");
-      const mockProvider = await MockPoolAddressesProvider.deploy(mockAavePool.address);
-      await mockProvider.deployed();
-
       const fa = await FlashloanArbitrage.deploy(
-        mockProvider.address,
+        mockAavePool.address,
         mockRouter.address,
         mockRouter.address,
         mockRouter.address,
         owner.address,
-        owner.address,
+        owner.address, // mock sky flash minter
         owner.address
       );
       await fa.deployed();
@@ -164,17 +137,11 @@ describe("FlashloanArbitrage", function () {
 
       await mockToken.mint(fa.address, amount.add(ethers.utils.parseEther("1")));
 
-      await network.provider.request({
-        method: "hardhat_impersonateAccount",
-        params: [mockAavePool.address],
-      });
-      const poolSigner = await ethers.getSigner(mockAavePool.address);
-
-      await expect(fa.connect(poolSigner).executeOperation(
+      await expect(fa.connect(owner).onFlashLoan(
+        owner.address,
         asset,
         amount,
         0,
-        owner.address,
         params
       )).to.not.be.reverted;
     });

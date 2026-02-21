@@ -62,9 +62,10 @@ module.exports = {
     contracts: {
         arbitrageContract: process.env.ARBITRAGE_CONTRACT_ADDRESS,
         flashloanProvider: process.env.FLASHLOAN_PROVIDER || chainConfig.flashloanProvider.address,
-        aavePool: process.env.AAVE_POOL || chainConfig.flashloanProvider.address,
+        aavePool: process.env.AAVE_POOL || chainConfig.aavePool,
         balancerVault: process.env.BALANCER_VAULT || chainConfig.balancerVault,
         skyFlashMinter: process.env.SKY_FLASH_MINTER || chainConfig.skyFlashMinter,
+        zeroXExchangeProxy: process.env.ZEROX_EXCHANGE_PROXY || chainConfig.zeroXExchangeProxy,
         flashloanProviderName: chainConfig.flashloanProvider.name,
         flashloanFee: chainConfig.flashloanProvider.fee
     },

@@ -13,7 +13,7 @@ While the core architectural framework and smart contracts are robust and suppor
 ### 1. 🧪 Testing (Highest Priority)
 *   **Gap**: There are zero automated unit or integration tests in the `test/` directory.
 *   **Risk**: High risk of logic errors in the smart contract's strategy routing or the bot's encoding logic, leading to lost gas or reverted transactions.
-*   **Required**: A full Hardhat test suite with mainnet forking to verify flash loan callbacks for Aave, Balancer, and Sky.
+*   **Required**: A full Hardhat test suite with mainnet forking to verify flash loan callbacks for Balancer and Sky.
 
 ### 2. ⚡ Transaction Simulation
 *   **Gap**: The bot submits transactions directly to the mempool without prior simulation.

@@ -18,12 +18,13 @@ const CHAINS = {
         testnetRpcUrl: process.env.ETHEREUM_TESTNET_RPC_URL,
         testnetWssUrl: process.env.ETHEREUM_TESTNET_WSS_URL,
         blockExplorer: 'https://etherscan.io',
-        // Flashloan provider
+        // Flashloan providers (0% fee)
         flashloanProvider: {
-            name: 'Aave V3',
-            address: process.env.AAVE_LENDING_POOL || '0x87870B27F51f6b03397141047603a6020BCff228',
-            fee: 0.0009 // 0.09%
+            name: 'Balancer V2',
+            address: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
+            fee: 0.0
         },
+        aavePool: '0x87870B27F51f6b03397141047603a6020BCff228',
         balancerVault: '0xBA12222222228d8Ba445958a75a0704d566BF2C8',
         skyFlashMinter: '0x60C96F604a4441738F98931109A545385960cc72',
         zeroXExchangeProxy: '0xDef1C0ded9bec7F1a1670819833240f027b25EfF',
@@ -80,17 +81,13 @@ const CHAINS = {
         testnetRpcUrl: process.env.BNB_TESTNET_RPC_URL,
         testnetWssUrl: process.env.BNB_TESTNET_WSS_URL,
         blockExplorer: 'https://bscscan.com',
-        // Flashloan provider
-        // Note: BNB Chain flashloan providers vary. Common options:
-        // - PancakeSwap V2/V3 (has flashloan functionality)
-        // - DODOV2 Protocol
-        // - Other protocols
-        // Users should configure the appropriate flashloan provider address
+        // Flashloan provider (0% fee)
         flashloanProvider: {
-            name: process.env.BNB_FLASHLOAN_PROVIDER_NAME || 'PancakeSwap',
-            address: process.env.BNB_FLASHLOAN_PROVIDER || process.env.FLASHLOAN_PROVIDER || '',
-            fee: parseFloat(process.env.BNB_FLASHLOAN_FEE) || 0.0009 // 0.09% (default, may vary)
+            name: 'PancakeSwap',
+            address: '0x13f4EA83D0bd40E75C8222255bc855a974568Dd4', // Router/Vault for flash loans
+            fee: 0.0
         },
+        aavePool: '', // Not applicable for BNB Chain typically
         // DEX configuration
         dexes: {
             pancakeSwapV2: {

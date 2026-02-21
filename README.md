@@ -135,7 +135,7 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 - 🔄 **Cross-DEX Arbitrage**: Exploits price differences across multiple DEXes
   - **Ethereum**: Uniswap V2, Uniswap V3, SushiSwap
   - **BNB Chain**: PancakeSwap V2, PancakeSwap V3, Biswap, ApeSwap
-- ⚡ **Flashloan Technology**: Uses Aave V3 (Ethereum) and configurable providers (BNB Chain) for zero-capital trading
+- ⚡ **Flashloan Technology**: Uses 0% fee providers (Balancer V2, Sky/MakerDAO) for zero-capital trading
 - 📊 **Real-time Multi-Chain Monitoring**: Continuous price scanning via RPC/WebSocket
 - 🎯 **Automated Execution**: Smart contract-based atomic transactions
 - 🛡️ **Risk-Free Design**: All-or-nothing execution ensures no partial losses
@@ -178,7 +178,7 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 |---------|-------------|--------|
 | **Multi-Chain Support** | Ethereum & BNB Chain (Binance Smart Chain) | ✅ Active |
 | **Multi-DEX Arbitrage** | Uniswap V2/V3, SushiSwap (Ethereum) • PancakeSwap V2/V3, Biswap, ApeSwap (BNB Chain) | ✅ Active |
-| **Flashloan Integration** | Aave V3 (Ethereum) • Configurable providers (BNB Chain) | ✅ Active |
+| **Flashloan Integration** | Balancer V2, Sky (0% fee) | ✅ Active |
 | **Real-time Monitoring** | WebSocket-based multi-chain price tracking | ✅ Active |
 | **Gas Optimization** | Dynamic gas estimation with EIP-1559 | ✅ Active |
 | **Chain-Specific Configuration** | Automatic chain detection and configuration | ✅ Active |
@@ -253,9 +253,9 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
         │           │           │
         ▼           ▼           ▼
 ┌──────────┐  ┌──────────┐  ┌──────────┐
-│  Aave V3 │  │ Pancake  │  │   Other  │
-│ Ethereum │  │  BNB     │  │ Providers│
-│ Flashloan│  │ Flashloan│  │  BNB     │
+│ Balancer │  │   Sky    │  │ Pancake  │
+│    V2    │  │ (Maker)  │  │ Flashloan│
+│ (0% Fee) │  │ (0% Fee) │  │ (0% Fee) │
 └──────────┘  └──────────┘  └──────────┘
 ```
 
@@ -362,7 +362,7 @@ graph TD
    └─> Ensure MEV opportunity is profitable after all costs
 
 3. MEV BOT EXECUTES (Atomic Transaction)
-   └─> Request flashloan (Aave on Ethereum, configurable on BNB Chain)
+   └─> Request 0% fee flashloan (Balancer or Sky)
    └─> Buy tokens on cheaper DEX
    └─> Sell tokens on expensive DEX
    └─> Repay flashloan + fee
@@ -385,16 +385,16 @@ MEV Opportunity Detected by Bot:
 • WETH on SushiSwap: $2010 (0.5% price difference)
 
 MEV Bot Execution on Ethereum Mainnet:
-1. MEV Bot initiates flashloan: Borrow 10 ETH from Aave (no collateral required)
+1. MEV Bot initiates flashloan: Borrow 10 ETH from Balancer (0% fee, no collateral)
 2. MEV Bot buys: 10 ETH worth of USDC on Uniswap (~$20,000)
 3. MEV Bot sells: $20,000 USDC for ETH on SushiSwap (~10.05 ETH)
-4. MEV Bot repays: 10.009 ETH to Aave (10 + 0.09% fee)
-5. MEV Bot profit: 0.041 ETH (~$82) minus gas fees
+4. MEV Bot repays: 10.0 ETH to Balancer (10 + 0% fee)
+5. MEV Bot profit: 0.05 ETH (~$100) minus gas fees
 
 Ethereum MEV Bot Costs:
 - Uniswap swap fee: 0.3% = 0.03 ETH
 - SushiSwap swap fee: 0.3% = 0.03 ETH  
-- Aave flashloan fee: 0.09% = 0.009 ETH
+- Flashloan fee: 0% = 0.000 ETH
 - Ethereum gas: ~0.015 ETH (at 50 gwei)
 
 Net MEV Profit: ~$60-80 per arbitrage trade
@@ -759,8 +759,7 @@ Support Ethereum MEV development:
   - Ethereum: Uniswap V2, Uniswap V3, SushiSwap
   - BNB Chain: PancakeSwap V2, PancakeSwap V3, Biswap, ApeSwap
 - [x] ✅ **Flashloan Integration**: 
-  - Aave V3 on Ethereum
-  - Configurable providers on BNB Chain
+  - Balancer V2 & Sky (0% fee)
 - [x] ✅ **Real-time Price Monitoring**: WebSocket connection to multiple chains
 - [x] ✅ **Gas Optimization**: EIP-1559 support and dynamic gas pricing (both chains)
 - [x] ✅ **Smart Contract**: Auditable Solidity 0.8.19 contract (deployable on both chains)
@@ -1241,7 +1240,7 @@ This software is provided for **educational and research purposes** regarding ME
 |---------|-------------------------|----------------|
 | **Open Source** | ✅ Fully open source | ❌ Often closed/obfuscated |
 | **Multi-Chain Support** | ✅ Ethereum & BNB Chain | ❌ Single chain only |
-| **Flashloan Support** | ✅ Aave V3 (Ethereum) + Configurable (BNB Chain) | ⚠️ Limited or paid only |
+| **Flashloan Support** | ✅ Balancer & Sky (0% Fee Only) | ⚠️ Limited or paid only |
 | **Documentation** | ✅ 100+ pages of docs | ❌ Minimal/none |
 | **Active Development** | ✅ Regular updates | ❌ Abandoned projects |
 | **Multi-DEX** | ✅ Uniswap, SushiSwap (Ethereum) • PancakeSwap, Biswap (BNB Chain) | ⚠️ Single DEX only |
@@ -1285,7 +1284,7 @@ This repository ranks for: **multi-chain mev bot**, **ethereum mev bot**, **bnb 
 
 **Tags:** `Multi-Chain MEV Bot` • `Ethereum MEV Bot` • `BNB Chain MEV Bot` • `BSC MEV Bot` • `Ethereum Arbitrage` • `BNB Arbitrage` • `Flashloan Bot` • `DeFi Trading Bot` • `Uniswap Arbitrage` • `PancakeSwap Arbitrage` • `Ethereum Trading` • `BNB Chain Trading` • `MEV Strategies` • `Open Source MEV` • `GitHub MEV Bot`
 
-**Multi-Chain Support** • **Ethereum Mainnet** • **BNB Chain Mainnet** • **Solidity 0.8.19** • **Aave V3 Flashloans** • **Uniswap V2/V3** • **SushiSwap** • **PancakeSwap V2/V3** • **Biswap** • **ApeSwap** • **Web3.js** • **Hardhat**
+**Multi-Chain Support** • **Ethereum Mainnet** • **BNB Chain Mainnet** • **Solidity 0.8.20** • **0% Fee Flashloans** • **Uniswap V2/V3** • **SushiSwap** • **PancakeSwap V2/V3** • **Biswap** • **ApeSwap** • **Web3.js** • **Hardhat**
 
 ---
 
