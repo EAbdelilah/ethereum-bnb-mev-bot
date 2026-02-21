@@ -169,10 +169,17 @@ contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownab
     }
     
     enum FlashLoanProvider { Balancer, Sky }
-    enum Strategy { Arbitrage, Liquidation, UniswapXFilling }
+    enum Strategy {
+        MirroringRFQ,
+        SpatialArbitrage,
+        Liquidation,
+        CollateralSwap,
+        TriangularArb,
+        SelfLiquidation
+    }
 
     /**
-     * @dev Execute arbitrage or liquidation with flashloan from a specific provider (0% fee)
+     * @dev Execute strategy with flashloan from a specific provider (0% fee)
      * @param asset Token address to borrow
      * @param amount Amount to borrow
      * @param provider Flashloan provider (0: Balancer, 1: Sky)
@@ -244,12 +251,16 @@ contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownab
 
         uint256 finalAmount;
 
-        if (strategy == Strategy.Arbitrage) {
+        if (strategy == Strategy.MirroringRFQ) {
+            finalAmount = _handleUniswapXFilling(asset, amount, strategyData);
+        } else if (strategy == Strategy.SpatialArbitrage || strategy == Strategy.TriangularArb) {
             finalAmount = _handleArbitrage(asset, amount, strategyData);
         } else if (strategy == Strategy.Liquidation) {
             finalAmount = _handleLiquidation(asset, amount, strategyData);
-        } else if (strategy == Strategy.UniswapXFilling) {
-            finalAmount = _handleUniswapXFilling(asset, amount, strategyData);
+        } else if (strategy == Strategy.CollateralSwap) {
+            finalAmount = _handleCollateralSwap(asset, amount, strategyData);
+        } else if (strategy == Strategy.SelfLiquidation) {
+            finalAmount = _handleSelfLiquidation(asset, amount, strategyData);
         }
 
         // Calculate profit
@@ -324,6 +335,31 @@ contract FlashloanArbitrage is IFlashLoanRecipient, IERC3156FlashBorrower, Ownab
         
         emit ArbitrageExecuted(asset, finalAmount - amount, block.timestamp);
         return finalAmount;
+    }
+
+    /**
+     * @dev Internal handler for Collateral Swap strategy
+     */
+    function _handleCollateralSwap(
+        address asset,
+        uint256 amount,
+        bytes memory strategyData
+    ) internal returns (uint256) {
+        // Implementation logic for swapping collateral within a loan
+        // For now, returning borrowed amount to ensure repayment
+        return amount;
+    }
+
+    /**
+     * @dev Internal handler for Self Liquidation strategy
+     */
+    function _handleSelfLiquidation(
+        address asset,
+        uint256 amount,
+        bytes memory strategyData
+    ) internal returns (uint256) {
+        // Implementation logic for repaying own debt
+        return amount;
     }
 
     /**

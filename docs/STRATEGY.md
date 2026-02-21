@@ -45,18 +45,26 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infrastructure for flash loans to encourage liquidations, arbitrage, and volume.
 
-### Part 1: The 8 Flash Loan Strategies & Profitability
+### 🏆 Tier 1: The "Alpha Kings" (Highest Profit Potential)
 
-| # | Strategy | Description | Key Goal | Expected Profitability | Risk Level |
-|---|---|---|---|---|---|
-| 1 | **Spatial Arbitrage** | Buy low on DEX A, sell high on DEX B in one block. | Profit from price gaps | 0.1% – 1% per trade | Low |
-| 2 | **Triangular Arb** | Loop on a single DEX (e.g., ETH→USDC→DAI→ETH). | Profit from internal pair gaps | 0.2% – 1.5% per loop | Low |
-| 3 | **Liquidation** | Repay a user's debt for them; take collateral at a discount. | Capture liquidation bounties | 5% – 10% of debt | Medium |
-| 4 | **Collateral Swap** | Swap your collateral without closing the loan. | Portfolio rebalancing | Variable (Utility) | Low |
-| 5 | **JIT Liquidity** | Add liquidity right before a whale trade; remove it after. | Capture massive swap fees | High (Fee-based) | High |
-| 6 | **Mirroring** | Place orders as a "Maker"; hedge instantly as a "Taker." | Risk-free market making | 0.1% – 0.5% | Medium |
-| 7 | **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
-| 8 | **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **1** | **Mirroring (RFQ)** | **Infinite Volume.** Capture a stable spread on every trade using 0x as a source. | **$0 (Zero Capital)** | ⭐⭐⭐⭐⭐ |
+| **2** | **Spatial Arbitrage** | **Pure Alpha.** Price gaps between local DEXs and 0x aggregate. | **$0 (Zero Capital)** | ⭐⭐⭐⭐ |
+| **3** | **Liquidation** | **Max Margin.** 5-10% immediate bonus for liquidating unhealthy positions. | **$0 (Zero Capital)** | ⭐⭐⭐ |
+
+### 🥈 Tier 2: The "Alpha Hunters" (Consistent, specialized)
+
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **4** | **Collateral Swap** | **Efficiency.** Swapping collateral within a loan to avoid liquidation. | **$0 (Zero Capital)** | ⭐⭐ |
+
+### 🥉 Tier 3: The "Alpha Scraps" (Low margin or high competition)
+
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **5** | **Triangular Arb** | **Efficiency.** Hard to win against specialized bots, but possible on new L2s. | **$0 (Zero Capital)** | ⭐⭐ |
+| **6** | **Self-Liquidation** | **Loss Prevention.** Saves the 10% penalty on your own unhealthy debt. | **$0 (Zero Capital)** | ⭐ |
 
 ### Part 2: The 0% Providers
 

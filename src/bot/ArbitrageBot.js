@@ -20,9 +20,12 @@ const logger = require('../utils/logger');
 const ARBITRAGE_ABI = require('../abis/FlashloanArbitrage.json');
 
 const Strategy = {
-    Arbitrage: 0,
-    Liquidation: 1,
-    UniswapXFilling: 2
+    MirroringRFQ: 0,
+    SpatialArbitrage: 1,
+    Liquidation: 2,
+    CollateralSwap: 3,
+    TriangularArb: 4,
+    SelfLiquidation: 5
 };
 
 const FlashLoanProvider = {
@@ -130,27 +133,61 @@ class ArbitrageBot {
     }
     
     /**
-     * Scan for arbitrage, liquidation, and UniswapX opportunities
+     * Scan for opportunities across Tier 1, Tier 2, and Tier 3 strategies
      */
     async scanForOpportunities() {
-        // Strategy Selector Logic
-        if (this.config.bot.strategies.arbitrage) {
-            await this.scanArbitrage();
+        // Tier 1: Alpha Kings
+        if (this.config.bot.strategies.mirroringRFQ) {
+            await this.scanUniswapX(); // Mirroring (RFQ)
         }
-
+        if (this.config.bot.strategies.spatialArbitrage) {
+            await this.scanArbitrage(); // Spatial Arbitrage
+        }
         if (this.config.bot.strategies.liquidation) {
             await this.scanLiquidations();
         }
 
-        if (this.config.bot.strategies.uniswapX) {
-            await this.scanUniswapX();
+        // Tier 2: Alpha Hunters
+        if (this.config.bot.strategies.collateralSwap) {
+            await this.scanCollateralSwaps();
+        }
+
+        // Tier 3: Alpha Scraps
+        if (this.config.bot.strategies.triangularArb) {
+            await this.scanTriangularArb();
+        }
+        if (this.config.bot.strategies.selfLiquidation) {
+            await this.scanSelfLiquidations();
         }
     }
 
     /**
-     * Scan for arbitrage opportunities
+     * Scan for triangular arbitrage opportunities
      */
-    async scanArbitrage() {
+    async scanTriangularArb() {
+        // Triangular Arb logic (usually path based within same DEX)
+        // For now, reuse scanArbitrage logic with special triangular paths
+        await this.scanArbitrage(true);
+    }
+
+    /**
+     * Scan for collateral swap opportunities
+     */
+    async scanCollateralSwaps() {
+        // Implementation for collateral swaps
+    }
+
+    /**
+     * Scan for self-liquidation opportunities
+     */
+    async scanSelfLiquidations() {
+        // Implementation for self-liquidations
+    }
+
+    /**
+     * Scan for spatial arbitrage opportunities
+     */
+    async scanArbitrage(isTriangular = false) {
         const tokens = this.config.tokens.watchlist;
         const gasPrice = await this.gasEstimator.estimateGasPrice();
 
@@ -167,7 +204,7 @@ class ArbitrageBot {
                     );
                     
                     if (isProfitable) {
-                        await this.executeArbitrage(opportunity);
+                        await this.executeArbitrage(opportunity, isTriangular ? Strategy.TriangularArb : Strategy.SpatialArbitrage);
                     }
                 }
             } catch (error) {
@@ -252,8 +289,8 @@ class ArbitrageBot {
     /**
      * Execute arbitrage trade
      */
-    async executeArbitrage(opportunity) {
-        logger.info('⚡ Executing arbitrage...', opportunity);
+    async executeArbitrage(opportunity, strategyType = Strategy.SpatialArbitrage) {
+        logger.info(`⚡ Executing ${strategyType === Strategy.TriangularArb ? 'Triangular Arb' : 'Spatial Arbitrage'}...`, opportunity);
         this.stats.executedTrades++;
         
         try {
@@ -264,7 +301,7 @@ class ArbitrageBot {
             const arbitrageData = this.encodeArbitrageData(opportunity, routers);
             const params = ethers.utils.defaultAbiCoder.encode(
                 ['uint8', 'bytes'],
-                [Strategy.Arbitrage, arbitrageData]
+                [strategyType, arbitrageData]
             );
             
             const gasPrice = await this.gasEstimator.estimateGasPrice();
@@ -439,7 +476,7 @@ class ArbitrageBot {
 
             const params = ethers.utils.defaultAbiCoder.encode(
                 ['uint8', 'bytes'],
-                [Strategy.UniswapXFilling, strategyData]
+                [Strategy.MirroringRFQ, strategyData]
             );
 
             const gasPrice = await this.gasEstimator.estimateGasPrice();

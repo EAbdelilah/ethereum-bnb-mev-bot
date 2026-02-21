@@ -97,9 +97,12 @@ module.exports = {
         maxTradeSize: parseFloat(process.env.MAX_TRADE_SIZE) || (chainName === 'bnb' ? 10 : 10), // Same for both
         enableMempoolMonitoring: process.env.ENABLE_MEMPOOL_MONITORING === 'true',
         strategies: {
-            arbitrage: process.env.STRATEGY_ARBITRAGE !== 'false',
+            mirroringRFQ: process.env.STRATEGY_MIRRORING_RFQ !== 'false',
+            spatialArbitrage: process.env.STRATEGY_SPATIAL_ARBITRAGE !== 'false',
             liquidation: process.env.STRATEGY_LIQUIDATION !== 'false',
-            uniswapX: process.env.STRATEGY_UNISWAPX !== 'false'
+            collateralSwap: process.env.STRATEGY_COLLATERAL_SWAP !== 'false',
+            triangularArb: process.env.STRATEGY_TRIANGULAR_ARB !== 'false',
+            selfLiquidation: process.env.STRATEGY_SELF_LIQUIDATION !== 'false'
         },
         defaultFlashLoanProvider: process.env.DEFAULT_FLASHLOAN_PROVIDER || 'balancer'
     },

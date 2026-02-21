@@ -80,7 +80,7 @@ describe("FlashloanArbitrage", function () {
       const asset = mockToken.address;
       const amount = ethers.utils.parseEther("1");
 
-      const strategy = 0; // Arbitrage
+      const strategy = 1; // SpatialArbitrage
       const strategyData = ethers.utils.defaultAbiCoder.encode(
         ["address[]", "address[]", "uint24[]", "bool"],
         [[asset, asset, asset], [mockRouter.address, mockRouter.address], [3000, 3000], false]
@@ -124,7 +124,7 @@ describe("FlashloanArbitrage", function () {
       const collateral = mockToken.address;
       const amount = ethers.utils.parseEther("1");
 
-      const strategy = 1; // Liquidation
+      const strategy = 2; // Liquidation
       const strategyData = ethers.utils.defaultAbiCoder.encode(
         ["address", "address", "address[]", "address[]", "uint24[]", "bool"],
         [collateral, addr1.address, [collateral, asset], [mockRouter.address], [3000], false]

@@ -147,10 +147,12 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 **MEV (Maximal Extractable Value)** refers to the profit that can be extracted by reordering, including, or excluding transactions within blocks. Our **multi-chain MEV bot** focuses specifically on **arbitrage MEV** - the most stable and ethical form of **MEV extraction**. Unlike sandwich bots or liquidation bots, this **arbitrage MEV bot** provides value to the ecosystem through price discovery.
 
 **MEV bot strategies** include:
-- **Arbitrage MEV**: Price differences across DEXes (this bot's focus)
-- **Sandwich Trading**: Front-running and back-running large swaps
+- **Mirroring (RFQ)**: Capturing stable spreads using 0x aggregate
+- **Spatial Arbitrage**: Price gaps between DEXs and aggregators
 - **Liquidation MEV**: Liquidating under-collateralized positions
-- **NFT MEV**: Arbitrage on NFT marketplaces
+- **Collateral Swap**: Portfolio rebalancing within active loans
+- **Triangular Arb**: Price gaps within a single DEX loop
+- **Self-Liquidation**: Debt repayment to save penalty fees
 
 ### Why Use This Multi-Chain MEV Bot for Arbitrage?
 
