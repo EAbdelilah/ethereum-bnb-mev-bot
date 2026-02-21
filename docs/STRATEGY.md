@@ -45,7 +45,7 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infrastructure for flash loans to encourage liquidations, arbitrage, and volume.
 
-### Part 1: The 9 Flash Loan Strategies & Profitability
+### Part 1: The 8 Flash Loan Strategies & Profitability
 
 | # | Strategy | Description | Key Goal | Expected Profitability | Risk Level |
 |---|---|---|---|---|---|
@@ -55,9 +55,8 @@ In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infr
 | 4 | **Collateral Swap** | Swap your collateral without closing the loan. | Portfolio rebalancing | Variable (Utility) | Low |
 | 5 | **JIT Liquidity** | Add liquidity right before a whale trade; remove it after. | Capture massive swap fees | High (Fee-based) | High |
 | 6 | **Mirroring** | Place orders as a "Maker"; hedge instantly as a "Taker." | Risk-free market making | 0.1% – 0.5% | Medium |
-| 7 | **Governance Flash**| Borrow tokens to vote on a proposal, then return them. | Political influence | N/A (Utility) | Low |
-| 8 | **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
-| 9 | **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
+| 7 | **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
+| 8 | **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
 
 ### Part 2: The 9 Zero-Percent (0%) Providers
 
