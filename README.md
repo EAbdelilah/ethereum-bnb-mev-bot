@@ -1180,6 +1180,23 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
+## 🛡️ Security & Risk Assessment (Read Before Using)
+
+### Is this a "Sure" Bot?
+**No.** There is no such thing as a "sure" or guaranteed profit bot in DeFi or MEV. While this bot is technically robust and implements advanced strategies, you must understand the following:
+
+1.  **Extreme Competition**: MEV is a "Red Ocean." You are competing against institutional-grade bots, some of which have direct partnerships with miners/validators.
+2.  **Gas Risk**: Even with 0% fee flash loans, you still pay for network gas. In high-traffic periods, gas costs can exceed the arbitrage profit, leading to a net loss.
+3.  **Front-running**: Competitors monitor the public mempool. They may see your profitable transaction and "copy" it with a higher gas price, stealing the opportunity. (We recommend using **Flashbots** to mitigate this).
+4.  **No Profit Guarantees**: Arbitrage opportunities depend on market volatility. In stable markets, there may be no profitable trades for days.
+
+### Safety First
+-   **Never use your primary wallet**: Always create a dedicated "hot wallet" for the bot with only the funds required for gas.
+-   **Test on Testnet**: We have provided a full test suite and support for Goerli/Sepolia. **Do not deploy to Mainnet** until you have seen consistent successful simulations on a testnet.
+-   **Audit the Code**: This bot is open-source. We have audited it for common "scam" patterns (like hardcoded backdoors), but you should always perform your own due diligence.
+
+---
+
 ## ⚠️ Disclaimer
 
 **IMPORTANT: READ CAREFULLY**
@@ -1188,21 +1205,20 @@ This software is provided for **educational and research purposes** regarding ME
 
 ### Risk Disclosure
 
-- ❌ **Financial Risk**: Trading on Ethereum, BNB Chain, or any blockchain involves substantial risk of loss
-- ❌ **No Guarantees**: Past performance does not guarantee future results
-- ❌ **Market Risk**: Blockchain and DeFi markets are highly volatile
-- ❌ **Technical Risk**: Software bugs or network issues can cause losses
-- ❌ **Gas Risk**: High gas prices (especially on Ethereum) can eliminate profits
-- ❌ **Competition**: MEV is highly competitive on all chains
-- ❌ **Chain-Specific Risks**: Each chain has unique risks and considerations
-- ❌ **Smart Contract Risk**: Bugs in smart contracts can result in total loss
+- ❌ **Financial Risk**: Trading on Ethereum, BNB Chain, or any blockchain involves substantial risk of loss. **Capital at risk is limited to gas fees paid.**
+- ❌ **No Guarantees**: Past performance does not guarantee future results.
+- ❌ **Market Risk**: Blockchain and DeFi markets are highly volatile.
+- ❌ **Technical Risk**: Software bugs or network issues can cause losses.
+- ❌ **Gas Risk**: High gas prices (especially on Ethereum) can eliminate profits.
+- ❌ **Competition**: MEV is highly competitive on all chains.
+- ❌ **Smart Contract Risk**: Bugs in smart contracts can result in total loss of funds held within the contract.
 
 ### Legal Disclaimer
 
-- This is **NOT financial advice**
-- Authors are **NOT responsible** for any losses on any chain
-- Users must comply with local laws regarding blockchain trading
-- **USE AT YOUR OWN RISK**
+- This is **NOT financial advice**.
+- Authors are **NOT responsible** for any losses on any chain.
+- Users must comply with local laws regarding blockchain trading.
+- **USE AT YOUR OWN RISK.**
 
 ### Best Practices for Multi-Chain Trading
 
