@@ -3,7 +3,7 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_addressProvider",
+        "name": "_aavePool",
         "type": "address"
       },
       {
@@ -19,6 +19,21 @@
       {
         "internalType": "address",
         "name": "_uniswapV3Router",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_balancerVault",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_skyFlashMinter",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_zeroXExchangeProxy",
         "type": "address"
       }
     ],
@@ -38,6 +53,28 @@
   {
     "inputs": [],
     "name": "InvalidParameters",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableInvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "OwnableUnauthorizedAccount",
     "type": "error"
   },
   {
@@ -101,6 +138,56 @@
       {
         "indexed": true,
         "internalType": "address",
+        "name": "user",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "debtAsset",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "collateralAsset",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "profit",
+        "type": "uint256"
+      }
+    ],
+    "name": "LiquidationExecuted",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "previousOwner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "OwnershipTransferred",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
         "name": "token",
         "type": "address"
       },
@@ -121,24 +208,78 @@
     "type": "event"
   },
   {
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "orderHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
         "internalType": "address",
-        "name": "asset",
+        "name": "filler",
         "type": "address"
       },
       {
+        "indexed": false,
         "internalType": "uint256",
-        "name": "amount",
+        "name": "profit",
         "type": "uint256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "params",
-        "type": "bytes"
       }
     ],
-    "name": "executeArbitrage",
+    "name": "UniswapXFilled",
+    "type": "event"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_GAS_PRICE",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "aavePool",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "balancerVault",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "emergencyWithdraw",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -156,14 +297,9 @@
         "type": "uint256"
       },
       {
-        "internalType": "uint256",
-        "name": "premium",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "initiator",
-        "type": "address"
+        "internalType": "enum FlashloanArbitrage.FlashLoanProvider",
+        "name": "provider",
+        "type": "uint8"
       },
       {
         "internalType": "bytes",
@@ -171,14 +307,8 @@
         "type": "bytes"
       }
     ],
-    "name": "executeOperation",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
+    "name": "executeArbitrage",
+    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },
@@ -196,6 +326,197 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "minProfitBasisPoints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "initiator",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "fee",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "data",
+        "type": "bytes"
+      }
+    ],
+    "name": "onFlashLoan",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "contract IERC20[]",
+        "name": "tokens",
+        "type": "address[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "amounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "uint256[]",
+        "name": "feeAmounts",
+        "type": "uint256[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "userData",
+        "type": "bytes"
+      }
+    ],
+    "name": "receiveFlashLoan",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_minProfit",
+        "type": "uint256"
+      }
+    ],
+    "name": "setMinProfitBasisPoints",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_zeroXExchangeProxy",
+        "type": "address"
+      }
+    ],
+    "name": "setZeroXExchangeProxy",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "skyFlashMinter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sushiswapRouter",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "newOwner",
+        "type": "address"
+      }
+    ],
+    "name": "transferOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "uniswapV2Router",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "uniswapV3Router",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -220,29 +541,16 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_minProfit",
-        "type": "uint256"
-      }
-    ],
-    "name": "setMinProfitBasisPoints",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
+    "inputs": [],
+    "name": "zeroXExchangeProxy",
+    "outputs": [
       {
         "internalType": "address",
-        "name": "token",
+        "name": "",
         "type": "address"
       }
     ],
-    "name": "emergencyWithdraw",
-    "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -250,4 +558,3 @@
     "type": "receive"
   }
 ]
-
