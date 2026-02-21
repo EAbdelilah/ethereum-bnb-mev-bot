@@ -24,10 +24,27 @@ async function main() {
         logger.info(`📡 Chain: ${chainName} ${networkType} (Chain ID: ${config.network.chainId})`);
         logger.info(`💼 Wallet: ${config.wallet.address}`);
         
-        // Create provider
-        const provider = new ethers.providers.WebSocketProvider(
-            config.network.wssUrl
-        );
+        // Create provider with reconnection logic
+        let provider = new ethers.providers.WebSocketProvider(config.network.wssUrl);
+
+        const setupProvider = (wssProvider) => {
+            wssProvider._websocket.on('close', async (code) => {
+                logger.error(`📡 WebSocket connection closed (code: ${code}). Reconnecting...`);
+                // Wait 5 seconds before reconnecting
+                setTimeout(() => {
+                    provider = new ethers.providers.WebSocketProvider(config.network.wssUrl);
+                    setupProvider(provider);
+                    // Update bot and wallet with new provider if needed
+                    // In a production app, you might want to re-initialize the bot
+                }, 5000);
+            });
+
+            wssProvider._websocket.on('error', (error) => {
+                logger.error('📡 WebSocket error:', error);
+            });
+        };
+
+        setupProvider(provider);
         
         // Create wallet
         const wallet = new ethers.Wallet(config.wallet.privateKey, provider);

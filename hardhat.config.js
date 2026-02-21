@@ -33,10 +33,10 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      forking: {
-        url: process.env.ETHEREUM_RPC_URL || process.env.RPC_URL || "",
+      forking: (process.env.ETHEREUM_RPC_URL || process.env.RPC_URL) ? {
+        url: process.env.ETHEREUM_RPC_URL || process.env.RPC_URL,
         blockNumber: 18000000
-      }
+      } : undefined
     },
     // Ethereum networks
     ethereum: {

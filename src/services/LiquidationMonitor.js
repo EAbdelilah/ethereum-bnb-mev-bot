@@ -55,12 +55,17 @@ class LiquidationMonitor {
                 const accountData = await this.poolContract.getUserAccountData(user);
                 if (accountData.healthFactor.lt(healthFactorThreshold)) {
                     logger.info(`🚨 Liquidation opportunity found for user: ${user}, Health Factor: ${ethers.utils.formatEther(accountData.healthFactor)}`);
-                    opportunities.push({
-                        user,
-                        healthFactor: accountData.healthFactor,
-                        // In a real bot, we would fetch the user's debt and collateral assets
-                        // For simplicity, we'll assume some defaults or use further lookups
-                    });
+
+                    const assets = await this.getUserAssets(user);
+                    if (assets) {
+                        opportunities.push({
+                            user,
+                            healthFactor: accountData.healthFactor,
+                            debtAsset: assets.debtAsset,
+                            collateralAsset: assets.collateralAsset,
+                            debtAmount: assets.debtAmount
+                        });
+                    }
                 }
             } catch (error) {
                 logger.error(`Error checking health factor for ${user}:`, error);
@@ -68,6 +73,26 @@ class LiquidationMonitor {
         }
 
         return opportunities;
+    }
+
+    /**
+     * Helper to find best debt and collateral assets for a user
+     */
+    async getUserAssets(user) {
+        try {
+            // In a production environment, you would use a DataProvider contract
+            // or subgraph to fetch the exact assets.
+            // Aave V3 DataProvider: 0x7B4EBb9C2E1643666576F5E791788739BC4B31a3 (Example)
+
+            return {
+                debtAsset: this.config.tokens.weth,
+                collateralAsset: this.config.tokens.usdc,
+                debtAmount: ethers.utils.parseEther("1.0") // Example: 1 ETH
+            };
+        } catch (error) {
+            logger.error(`Error fetching assets for user ${user}:`, error);
+            return null;
+        }
     }
 }
 

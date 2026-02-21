@@ -278,6 +278,26 @@ class ArbitrageBot {
             const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
                             (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
 
+            // 1. Simulate transaction (Static Call)
+            logger.info('🧪 Simulating transaction...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    opportunity.token,
+                    ethers.utils.parseEther(tradeAmount.toString()),
+                    provider,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 800000
+                    }
+                );
+                logger.info('✅ Simulation successful');
+            } catch (error) {
+                logger.warn(`❌ Simulation failed: ${error.message}`);
+                throw new Error(`Simulation failed: ${error.message}`);
+            }
+
+            // 2. Execute flashloan arbitrage
             const tx = await this.arbitrageContract.executeArbitrage(
                 opportunity.token,
                 ethers.utils.parseEther(tradeAmount.toString()),
@@ -433,6 +453,25 @@ class ArbitrageBot {
             const provider = providerName === 'balancer' ? FlashLoanProvider.Balancer :
                             (providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Aave);
 
+            // Simulate UniswapX Fill
+            logger.info('🧪 Simulating UniswapX Fill...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    assetIn,
+                    amountIn,
+                    provider,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 1200000
+                    }
+                );
+                logger.info('✅ UniswapX simulation successful');
+            } catch (error) {
+                logger.warn(`❌ UniswapX simulation failed: ${error.message}`);
+                throw new Error(`UniswapX simulation failed: ${error.message}`);
+            }
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 assetIn,
                 amountIn,
@@ -459,15 +498,13 @@ class ArbitrageBot {
      * Execute liquidation
      */
     async executeLiquidation(liq) {
-        logger.info('⚡ Executing liquidation...', liq);
+        logger.info('⚡ Executing liquidation...', liq.user);
         this.stats.executedTrades++;
 
         try {
-            // This is a simplified example. In production, you'd fetch the actual
-            // debt and collateral assets for the specific user.
-            const debtAsset = this.config.tokens.weth;
-            const collateralAsset = this.config.tokens.usdc;
-            const debtAmount = ethers.utils.parseEther("1"); // Example amount
+            const debtAsset = liq.debtAsset;
+            const collateralAsset = liq.collateralAsset;
+            const debtAmount = liq.debtAmount;
 
             const routers = [this.config.dexes.uniswapV2Router, this.config.dexes.sushiswapRouter];
             const swapPath = [collateralAsset, debtAsset];
@@ -484,6 +521,25 @@ class ArbitrageBot {
             );
 
             const gasPrice = await this.gasEstimator.estimateGasPrice();
+
+            // Simulate liquidation
+            logger.info('🧪 Simulating liquidation...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    debtAsset,
+                    debtAmount,
+                    FlashLoanProvider.Aave,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 1000000
+                    }
+                );
+                logger.info('✅ Liquidation simulation successful');
+            } catch (error) {
+                logger.warn(`❌ Liquidation simulation failed: ${error.message}`);
+                throw new Error(`Liquidation simulation failed: ${error.message}`);
+            }
 
             const tx = await this.arbitrageContract.executeArbitrage(
                 debtAsset,
