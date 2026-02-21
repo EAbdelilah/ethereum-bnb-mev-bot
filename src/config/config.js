@@ -23,10 +23,12 @@ try {
 
 const finalChainId = chainIdFromEnv || (isTestnet ? chainConfig.testnetChainId : chainConfig.chainId);
 
-// Determine RPC URL (Priority: RPC_URL_{ID} > RPC_URL > chainConfig defaults)
+// Determine RPC & WSS URLs (Priority: URL_{ID} > URL > chainConfig defaults)
 const rpcUrlByEnvId = process.env[`RPC_URL_${finalChainId}`];
 const rpcUrl = rpcUrlByEnvId || process.env.RPC_URL || (isTestnet ? (chainConfig.testnetRpcUrl || chainConfig.rpcUrl) : chainConfig.rpcUrl);
-const wssUrl = process.env.WSS_URL || (isTestnet ? (chainConfig.testnetWssUrl || chainConfig.wssUrl) : chainConfig.wssUrl);
+
+const wssUrlByEnvId = process.env[`WSS_URL_${finalChainId}`];
+const wssUrl = wssUrlByEnvId || process.env.WSS_URL || (isTestnet ? (chainConfig.testnetWssUrl || chainConfig.wssUrl) : chainConfig.wssUrl);
 
 // Build DEX configuration object (flattened for backward compatibility)
 const dexes = {};
