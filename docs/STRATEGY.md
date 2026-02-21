@@ -45,7 +45,7 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infrastructure for flash loans to encourage liquidations, arbitrage, and volume.
 
-### Part 1: The 12 Flash Loan Strategies & Profitability
+### Part 1: The 9 Flash Loan Strategies & Profitability
 
 | # | Strategy | Description | Key Goal | Expected Profitability | Risk Level |
 |---|---|---|---|---|---|
@@ -53,14 +53,11 @@ In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infr
 | 2 | **Triangular Arb** | Loop on a single DEX (e.g., ETH→USDC→DAI→ETH). | Profit from internal pair gaps | 0.2% – 1.5% per loop | Low |
 | 3 | **Liquidation** | Repay a user's debt for them; take collateral at a discount. | Capture liquidation bounties | 5% – 10% of debt | Medium |
 | 4 | **Collateral Swap** | Swap your collateral without closing the loan. | Portfolio rebalancing | Variable (Utility) | Low |
-| 5 | **Debt Refinancing** | Move a loan from high-interest to low-interest app. | Cost reduction | Variable (Utility) | Low |
-| 6 | **JIT Liquidity** | Add liquidity right before a whale trade; remove it after. | Capture massive swap fees | High (Fee-based) | High |
-| 7 | **Mirroring** | Place orders as a "Maker"; hedge instantly as a "Taker." | Risk-free market making | 0.1% – 0.5% | Medium |
-| 8 | **Loop Farming** | Repeatedly borrow/deposit to create 5x-10x leverage. | Yield maximization | 5x – 10x Yield | High |
-| 9 | **Governance Flash**| Borrow tokens to vote on a proposal, then return them. | Political influence | N/A (Utility) | Low |
-| 10| **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
-| 11| **Oracle Manipulation**| Artificially crash a pool price to borrow against it. | High-risk exploit | Extreme | Very High |
-| 12| **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
+| 5 | **JIT Liquidity** | Add liquidity right before a whale trade; remove it after. | Capture massive swap fees | High (Fee-based) | High |
+| 6 | **Mirroring** | Place orders as a "Maker"; hedge instantly as a "Taker." | Risk-free market making | 0.1% – 0.5% | Medium |
+| 7 | **Governance Flash**| Borrow tokens to vote on a proposal, then return them. | Political influence | N/A (Utility) | Low |
+| 8 | **Self-Liquidation**| Repay your own debt to avoid the 10% protocol penalty. | Capital preservation | 10% (Saved Penalty) | Low |
+| 9 | **Yield Hopping** | Instantly migrate LP positions to highest-paying farm. | Real-time yield chasing | 1% – 5% (Annualized) | Medium |
 
 ### Part 2: The 9 Zero-Percent (0%) Providers
 
@@ -70,7 +67,7 @@ These protocols allow you to borrow millions of dollars for a 0% fee (excluding 
 2.  **Sky (formerly MakerDAO):** "Flash Mint" up to 500M USDS/DAI for 0%. Largest stablecoin source.
 3.  **Morpho Blue:** A "governance-less" protocol with most markets hardcoded to 0% fees.
 4.  **Euler V2:** Modular "Vault" system allowing creators to set 0% fees for arbitrageurs.
-5.  **Fluid (Instadapp):** Built for "fluid" capital. Offers 0% loans for refinancing bots.
+5.  **Fluid (Instadapp):** Built for "fluid" capital. Offers 0% loans for developers building automated capital management tools.
 6.  **Dolomite:** Powerhouse on Arbitrum/Berachain using "virtual liquidity" for 0% loans.
 7.  **Spark Protocol:** Sub-branch of Sky for 0% stablecoin borrowing for internal liquidations.
 8.  **Gearbox:** Underlying liquidity pools allow 0% flash loans for account rebalancing.
