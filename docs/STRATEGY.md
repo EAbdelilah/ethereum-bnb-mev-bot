@@ -36,8 +36,49 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 1. **Price Discovery**: Monitor multiple DEXes simultaneously
 2. **Speed**: Execute trades before the opportunity disappears
-3. **Capital Efficiency**: Use flashloans to trade without upfront capital
+3. **Capital Efficiency**: Use 0% fee flashloans to trade without upfront capital
 4. **Gas Optimization**: Minimize transaction costs
+
+---
+
+## 🚀 2026 DeFi Landscape & Advanced Strategies
+
+In 2026, the DeFi landscape has matured significantly, moving toward 0% fee infrastructure for flash loans to encourage liquidations, arbitrage, and volume.
+
+### 🏆 Tier 1: The "Alpha Kings" (Highest Profit Potential)
+
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **1** | **Mirroring (RFQ)** | **Infinite Volume.** Capture a stable spread on every trade using 0x as a source. | **$0 (Zero Capital)** | ⭐⭐⭐⭐⭐ |
+| **2** | **Spatial Arbitrage** | **Pure Alpha.** Price gaps between local DEXs and 0x aggregate. | **$0 (Zero Capital)** | ⭐⭐⭐⭐ |
+| **3** | **Liquidation** | **Max Margin.** 5-10% immediate bonus for liquidating unhealthy positions. | **$0 (Zero Capital)** | ⭐⭐⭐ |
+
+### 🥈 Tier 2: The "Alpha Hunters" (Consistent, specialized)
+
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **4** | **Collateral Swap** | **Efficiency.** Swapping collateral within a loan to avoid liquidation. | **$0 (Zero Capital)** | ⭐⭐ |
+
+### 🥉 Tier 3: The "Alpha Scraps" (Low margin or high competition)
+
+| Rank | Strategy | Why it Wins | Expected Capital | Scalability |
+| :--- | :--- | :--- | :--- | :--- |
+| **5** | **Triangular Arb** | **Efficiency.** Hard to win against specialized bots, but possible on new L2s. | **$0 (Zero Capital)** | ⭐⭐ |
+| **6** | **Self-Liquidation** | **Loss Prevention.** Saves the 10% penalty on your own unhealthy debt. | **$0 (Zero Capital)** | ⭐ |
+
+### Part 2: The 0% Providers
+
+These protocols allow you to borrow millions of dollars for a 0% fee (excluding network gas), significantly improving arbitrage margins.
+
+1.  **Balancer (V2/V3):** The most flexible provider. Borrow any token held in their vault for 0%.
+2.  **Sky (formerly MakerDAO):** "Flash Mint" up to 500M USDS/DAI for 0%. Largest stablecoin source.
+3.  **Morpho Blue:** A "governance-less" protocol with most markets hardcoded to 0% fees.
+4.  **Euler V2:** Modular "Vault" system allowing creators to set 0% fees for arbitrageurs.
+5.  **Fluid (Instadapp):** Built for "fluid" capital. Offers 0% loans for developers building automated capital management tools.
+6.  **Dolomite:** Powerhouse on Arbitrum/Berachain using "virtual liquidity" for 0% loans.
+7.  **Spark Protocol:** Sub-branch of Sky for 0% stablecoin borrowing for internal liquidations.
+8.  **Gearbox:** Underlying liquidity pools allow 0% flash loans for account rebalancing.
+9.  **Silo Finance:** Uses isolated risk markets with 0% fees to encourage peg stability.
 
 ---
 
@@ -67,8 +108,8 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
 
 **Ethical Considerations**: ⚠️ Controversial - can harm other traders
 
-### 3. 🎯 Liquidation Arbitrage (Future)
-**Description**: Monitor lending protocols (Aave, Compound) for undercollateralized positions and execute liquidations.
+3. **Liquidation Arbitrage (Current Implementation)**
+**Description**: Monitor lending protocols (Aave, Compound, Spark) for undercollateralized positions and execute liquidations.
 
 **Requirements**:
 - Monitor health factors of all positions
@@ -102,11 +143,11 @@ Arbitrage is the simultaneous purchase and sale of an asset to profit from price
    └── Confirm profit > minimum threshold
 
 3. EXECUTION PHASE (Atomic Transaction)
-   ├── Request flashloan from Aave
+   ├── Request 0% flashloan (Balancer or Sky)
    ├── Receive borrowed tokens
    ├── Execute Swap 1 (Buy on cheaper DEX)
    ├── Execute Swap 2 (Sell on expensive DEX)
-   ├── Repay flashloan + premium
+   ├── Repay flashloan (0% fee)
    ├── Keep profit
    └── Transaction succeeds or reverts (no loss)
 
@@ -139,21 +180,21 @@ for each token in watchlist:
 ```
 Gross Profit = (SellPrice - BuyPrice) × Amount
 DEX Fees = Amount × 0.003 × 2  // 0.3% per swap
-Flashloan Fee = Amount × 0.0009  // 0.09% Aave fee
+Flashloan Fee = 0  // Using 0% providers
 Gas Cost = GasPrice × GasLimit
-Net Profit = Gross Profit - DEX Fees - Flashloan Fee - Gas Cost
+Net Profit = Gross Profit - DEX Fees - Gas Cost
 ```
 
 #### Step 3: Flashloan Arbitrage
 
 ```solidity
 // Pseudo-code for smart contract
-function executeArbitrage(token, amount) {
-    // 1. Request flashloan
-    flashloan(token, amount);
+function executeArbitrage(token, amount, provider) {
+    // 1. Request flashloan (Balancer or Sky)
+    flashloan(token, amount, provider);
 }
 
-function onFlashloanReceived(token, amount, premium) {
+function onFlashloanReceived(token, amount, fee) {
     // 2. Buy on cheaper DEX
     swapOnDexA(token, weth, amount);
     
@@ -161,10 +202,10 @@ function onFlashloanReceived(token, amount, premium) {
     swapOnDexB(weth, token, receivedAmount);
     
     // 4. Repay flashloan
-    repay(amount + premium);
+    repay(amount + fee);
     
     // 5. Keep profit
-    profit = balance - (amount + premium);
+    profit = balance - (amount + fee);
     require(profit > minProfit, "Insufficient profit");
 }
 ```
@@ -182,7 +223,7 @@ function onFlashloanReceived(token, amount, premium) {
 
 2. **Profit Calculator**
    - Estimates potential profit
-   - Accounts for all fees (DEX, flashloan, gas)
+   - Accounts for all fees (DEX, 0% flashloan, gas)
    - Calculates optimal trade size
 
 3. **Gas Estimator**
@@ -229,7 +270,7 @@ const amountOut = quoter.quoteExactInputSingle(
 
 1. **Minimum Profit Threshold**
    ```
-   Only execute if: NetProfit > MinThreshold (e.g., 0.01 ETH)
+   Only execute if: NetProfit > MinThreshold (e.g., 0.001 ETH with 0% fees)
    ```
 
 2. **Maximum Gas Price**
@@ -269,35 +310,35 @@ const amountOut = quoter.quoteExactInputSingle(
 
 ## Profitability Analysis
 
-### Cost Breakdown
+### Cost Breakdown (0% Fee Flashloan)
 
 ```
 Example Trade: 10 ETH arbitrage opportunity
 
 Revenue:
-  Price difference: 0.5% = 0.05 ETH
+  Price difference: 0.8% = 0.08 ETH
 
 Costs:
   Uniswap fee (0.3%):    0.03 ETH
   SushiSwap fee (0.3%):  0.03 ETH
-  Flashloan fee (0.09%): 0.009 ETH
+  Flashloan fee (0%):    0.000 ETH
   Gas cost (50 gwei):    0.015 ETH
   
-Total Cost: 0.084 ETH
-Net Profit: 0.05 - 0.084 = -0.034 ETH ❌
+Total Cost: 0.075 ETH
+Net Profit: 0.08 - 0.075 = 0.005 ETH ✅
 
-Conclusion: Not profitable
+Conclusion: Profitable with 0% fee flashloan
 ```
 
 ### Break-Even Analysis
 
 **Minimum price difference needed**:
 ```
-Break-even = DEX Fees + Flashloan Fee + Gas Cost
-           = 0.6% + 0.09% + 0.15%
-           = 0.84%
+Break-even = DEX Fees + Gas Cost
+           = 0.6% + 0.15%
+           = 0.75%
 
-Therefore: Need at least 0.84% price difference to break even
+Therefore: Need at least 0.75% price difference to break even (improved from 0.84% with Aave)
 Target: 1-2% difference for good profit margin
 ```
 
@@ -361,7 +402,11 @@ Monitor pending transactions:
 - Identify arbitrage opportunities early
 - Execute with higher gas to front-run
 
-### 6. Private Transactions
+### 6. Multi-Chain Alpha Correlation
+
+Opportunities often correlate across chains. For example, a large trade on Uniswap Mainnet often creates "Spatial Arbitrage" opportunities on L2s (Base, Polygon) as aggregators and market makers rebalance their inventory. By monitoring clusters of related chains, you can capture these ripple effects more efficiently than by scanning isolated networks.
+
+### 7. Private Transactions
 
 Use Flashbots to:
 - Submit transactions directly to miners
@@ -451,7 +496,7 @@ Arbitrage trading on Ethereum requires:
 
 - [Flashbots Documentation](https://docs.flashbots.net/)
 - [Uniswap V2 Whitepaper](https://uniswap.org/whitepaper.pdf)
-- [Aave Flashloan Guide](https://docs.aave.com/developers/guides/flash-loans)
+- [Balancer Flashloan Guide](https://docs.balancer.fi/guides/flash-loans.html)
 - [MEV Research](https://research.paradigm.xyz/)
 
 ---

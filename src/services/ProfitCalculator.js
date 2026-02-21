@@ -7,26 +7,38 @@ const BigNumber = require('bignumber.js');
 const logger = require('../utils/logger');
 
 class ProfitCalculator {
-    constructor(config) {
+    constructor(config, provider) {
         this.config = config;
-        this.flashloanFee = 0.0009; // 0.09% Aave flashloan fee
+        this.provider = provider;
+        this.flashloanFee = 0.0; // Only 0% fee providers used
         this.dexFee = 0.003; // 0.3% typical DEX fee
+
+        this.UNISWAP_V3_QUOTER_ABI = [
+            'function quoteExactInputSingle(address tokenIn, address tokenOut, uint24 fee, uint256 amountIn, uint160 sqrtPriceLimitX96) external returns (uint256 amountOut)'
+        ];
     }
     
     /**
      * Calculate potential profit for an arbitrage opportunity
      */
-    calculateProfit(opportunity, tradeAmount, gasPrice) {
+    calculateProfit(opportunity, tradeAmount, gasPrice, reserves = null) {
         const amount = new BigNumber(tradeAmount);
-        const buyPrice = new BigNumber(opportunity.buyPrice);
-        const sellPrice = new BigNumber(opportunity.sellPrice);
         
-        // Calculate amounts after fees
-        const buyAmount = amount.multipliedBy(1 - this.dexFee);
-        const sellAmount = buyAmount.multipliedBy(sellPrice).dividedBy(buyPrice);
-        const finalAmount = sellAmount.multipliedBy(1 - this.dexFee);
+        let finalAmount;
+        if (reserves && reserves.buyDex && reserves.sellDex) {
+            // Precise Uniswap V2 calculation: amountOut = (amountIn * 997 * reserveOut) / (reserveIn * 1000 + amountIn * 997)
+            const buyOutput = this.calculateAmountOut(amount, reserves.buyDex.reserveIn, reserves.buyDex.reserveOut);
+            finalAmount = this.calculateAmountOut(buyOutput, reserves.sellDex.reserveIn, reserves.sellDex.reserveOut);
+        } else {
+            // Simplified price-based calculation
+            const buyPrice = new BigNumber(opportunity.buyPrice);
+            const sellPrice = new BigNumber(opportunity.sellPrice);
+            const buyAmount = amount.multipliedBy(1 - this.dexFee);
+            const sellAmount = buyAmount.multipliedBy(sellPrice).dividedBy(buyPrice);
+            finalAmount = sellAmount.multipliedBy(1 - this.dexFee);
+        }
         
-        // Subtract flashloan fee
+        // Subtract flashloan fee (0% as requested)
         const flashloanFeeAmount = amount.multipliedBy(this.flashloanFee);
         const netAmount = finalAmount.minus(amount).minus(flashloanFeeAmount);
         
@@ -49,13 +61,27 @@ class ProfitCalculator {
     }
     
     /**
+     * Uniswap V2 exact amount out formula
+     */
+    calculateAmountOut(amountIn, reserveIn, reserveOut) {
+        const aIn = new BigNumber(amountIn);
+        const rIn = new BigNumber(reserveIn);
+        const rOut = new BigNumber(reserveOut);
+
+        const amountInWithFee = aIn.multipliedBy(997);
+        const numerator = amountInWithFee.multipliedBy(rOut);
+        const denominator = rIn.multipliedBy(1000).plus(amountInWithFee);
+        return numerator.dividedBy(denominator);
+    }
+
+    /**
      * Check if opportunity is profitable
      */
-    async isProfitable(opportunity, gasPrice) {
+    async isProfitable(opportunity, gasPrice, reserves = null) {
         // Use standard trade amount
         const tradeAmount = this.config.bot.maxTradeSize || 1;
         
-        const profit = this.calculateProfit(opportunity, tradeAmount, gasPrice);
+        const profit = this.calculateProfit(opportunity, tradeAmount, gasPrice, reserves);
         
         logger.debug('Profit calculation:', {
             grossProfit: profit.grossProfit.toFixed(6),
@@ -104,7 +130,27 @@ class ProfitCalculator {
     }
     
     /**
-     * Calculate price impact
+     * Precise output estimation using Uniswap V3 Quoter
+     */
+    async getUniswapV3Quote(tokenIn, tokenOut, fee, amountIn, quoterAddress) {
+        try {
+            const quoter = new ethers.Contract(quoterAddress, this.UNISWAP_V3_QUOTER_ABI, this.provider);
+            const quote = await quoter.callStatic.quoteExactInputSingle(
+                tokenIn,
+                tokenOut,
+                fee,
+                amountIn,
+                0
+            );
+            return new BigNumber(quote.toString());
+        } catch (error) {
+            logger.debug(`Quoter failed: ${error.message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Calculate price impact for Uniswap V2 (x*y=k)
      */
     calculatePriceImpact(tradeAmount, reserve0, reserve1) {
         const amountIn = new BigNumber(tradeAmount);

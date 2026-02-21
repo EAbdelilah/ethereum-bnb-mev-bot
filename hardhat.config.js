@@ -4,7 +4,26 @@ require("dotenv").config();
 
 module.exports = {
   solidity: {
-    version: "0.8.19",
+    compilers: [
+      {
+        version: "0.8.19",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
+      },
+      {
+        version: "0.8.20",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200
+          }
+        }
+      }
+    ],
     settings: {
       optimizer: {
         enabled: true,
@@ -14,10 +33,10 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      forking: {
-        url: process.env.ETHEREUM_RPC_URL || process.env.RPC_URL || "",
+      forking: (process.env.ETHEREUM_RPC_URL || process.env.RPC_URL) ? {
+        url: process.env.ETHEREUM_RPC_URL || process.env.RPC_URL,
         blockNumber: 18000000
-      }
+      } : undefined
     },
     // Ethereum networks
     ethereum: {

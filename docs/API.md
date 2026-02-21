@@ -118,16 +118,17 @@ const opportunity = bot.findArbitrageOpportunity(tokenAddress, {
 
 ---
 
-##### executeArbitrage(opportunity)
+##### executeArbitrage(opportunity, strategyType)
 
-Executes an arbitrage trade.
+Executes an arbitrage trade (Spatial or Triangular).
 
 ```javascript
-await bot.executeArbitrage(opportunity)
+await bot.executeArbitrage(opportunity, Strategy.SpatialArbitrage)
 ```
 
 **Parameters**:
 - `opportunity` (Object): Opportunity object from `findArbitrageOpportunity()`
+- `strategyType` (number): Strategy type from the `Strategy` enum
 
 **Returns**: `Promise<void>`
 
@@ -602,12 +603,13 @@ logger.error("Error message", error)
 
 #### executeArbitrage
 
-Executes arbitrage with flashloan.
+Executes a strategy with flashloan (0% fee).
 
 ```javascript
 await contract.executeArbitrage(
     assetAddress,
     amount,
+    provider,
     encodedParams,
     { gasPrice, gasLimit }
 )
@@ -616,7 +618,8 @@ await contract.executeArbitrage(
 **Parameters**:
 - `asset` (address): Token to borrow
 - `amount` (uint256): Amount to borrow
-- `params` (bytes): Encoded arbitrage parameters
+- `provider` (uint8): Flashloan provider (0: Balancer, 1: Sky)
+- `params` (bytes): Encoded strategy parameters
 
 ---
 

@@ -6,16 +6,33 @@
  */
 
 const { ethers } = require('ethers');
+const { FlashbotsBundleProvider } = require('@flashbots/ethers-provider-bundle');
 const BigNumber = require('bignumber.js');
 const cron = require('node-cron');
 
 const PriceFetcher = require('../services/PriceFetcher');
+const LiquidationMonitor = require('../services/LiquidationMonitor');
+const UniswapXMonitor = require('../services/UniswapXMonitor');
 const GasEstimator = require('../services/GasEstimator');
 const ProfitCalculator = require('../services/ProfitCalculator');
 const TelegramNotifier = require('../services/TelegramNotifier');
 const logger = require('../utils/logger');
 
 const ARBITRAGE_ABI = require('../abis/FlashloanArbitrage.json');
+
+const Strategy = {
+    MirroringRFQ: 0,
+    SpatialArbitrage: 1,
+    Liquidation: 2,
+    CollateralSwap: 3,
+    TriangularArb: 4,
+    SelfLiquidation: 5
+};
+
+const FlashLoanProvider = {
+    Balancer: 0,
+    Sky: 1
+};
 
 class ArbitrageBot {
     constructor(wallet, provider, config) {
@@ -25,8 +42,10 @@ class ArbitrageBot {
         
         // Initialize services
         this.priceFetcher = new PriceFetcher(provider, config);
+        this.liquidationMonitor = new LiquidationMonitor(provider, config);
+        this.uniswapXMonitor = new UniswapXMonitor(provider, config);
         this.gasEstimator = new GasEstimator(provider);
-        this.profitCalculator = new ProfitCalculator(config);
+        this.profitCalculator = new ProfitCalculator(config, provider);
         this.telegramNotifier = new TelegramNotifier(config);
         
         // Initialize contract
@@ -36,6 +55,12 @@ class ArbitrageBot {
             wallet
         );
         
+        // Flashbots initialization
+        this.flashbotsProvider = null;
+        if (config.bot.useFlashbots) {
+            this.initFlashbots();
+        }
+
         // State
         this.isRunning = false;
         this.opportunities = [];
@@ -53,11 +78,38 @@ class ArbitrageBot {
     }
     
     /**
+     * Initialize Flashbots provider
+     */
+    async initFlashbots() {
+        try {
+            // Flashbots needs a separate signing key for reputation
+            const authSigner = process.env.FLASHBOTS_AUTH_KEY
+                ? new ethers.Wallet(process.env.FLASHBOTS_AUTH_KEY)
+                : ethers.Wallet.createRandom();
+
+            this.flashbotsProvider = await FlashbotsBundleProvider.create(
+                this.provider,
+                authSigner,
+                this.config.bot.flashbotsRelayUrl || 'https://relay.flashbots.net'
+            );
+            logger.info('⚡ Flashbots provider initialized');
+        } catch (error) {
+            logger.error('❌ Failed to initialize Flashbots:', error.message);
+        }
+    }
+
+    /**
      * Start the bot
      */
     async start() {
         if (this.isRunning) {
             logger.warn('Bot is already running');
+            return;
+        }
+
+        // Validate configuration for current chain
+        if (!this.config.contracts.balancerVault && !this.config.contracts.skyFlashMinter) {
+            logger.error(`❌ No 0% flash loan providers configured for ${this.config.chain.name}`);
             return;
         }
         
@@ -115,38 +167,115 @@ class ArbitrageBot {
     }
     
     /**
-     * Scan for arbitrage opportunities
+     * Scan for opportunities across Tier 1, Tier 2, and Tier 3 strategies
      */
     async scanForOpportunities() {
+        // Tier 1: Alpha Kings
+        if (this.config.bot.strategies.mirroringRFQ) {
+            await this.scanUniswapX(); // Mirroring (RFQ)
+        }
+        if (this.config.bot.strategies.spatialArbitrage) {
+            await this.scanArbitrage(); // Spatial Arbitrage
+        }
+        if (this.config.bot.strategies.liquidation) {
+            await this.scanLiquidations();
+        }
+
+        // Tier 2: Alpha Hunters
+        if (this.config.bot.strategies.collateralSwap) {
+            await this.scanCollateralSwaps();
+        }
+
+        // Tier 3: Alpha Scraps
+        if (this.config.bot.strategies.triangularArb) {
+            await this.scanTriangularArb();
+        }
+        if (this.config.bot.strategies.selfLiquidation) {
+            await this.scanSelfLiquidations();
+        }
+    }
+
+    /**
+     * Scan for triangular arbitrage opportunities
+     */
+    async scanTriangularArb() {
+        // Triangular Arb logic (usually path based within same DEX)
+        // For now, reuse scanArbitrage logic with special triangular paths
+        await this.scanArbitrage(true);
+    }
+
+    /**
+     * Scan for collateral swap opportunities
+     */
+    async scanCollateralSwaps() {
+        // Implementation for collateral swaps
+    }
+
+    /**
+     * Scan for self-liquidation opportunities
+     */
+    async scanSelfLiquidations() {
+        // Implementation for self-liquidations
+    }
+
+    /**
+     * Scan for spatial arbitrage opportunities
+     */
+    async scanArbitrage(isTriangular = false) {
         const tokens = this.config.tokens.watchlist;
-        
+        const gasPrice = await this.gasEstimator.estimateGasPrice();
+
         for (const token of tokens) {
             try {
-                // Fetch prices from multiple DEXes
                 const prices = await this.priceFetcher.fetchPrices(token);
-                
-                // Find arbitrage opportunities
                 const opportunity = this.findArbitrageOpportunity(token, prices);
                 
                 if (opportunity) {
                     this.stats.totalOpportunities++;
-                    logger.info('💎 Arbitrage opportunity found!', opportunity);
-                    
-                    // Calculate if profitable after gas
                     const isProfitable = await this.profitCalculator.isProfitable(
                         opportunity,
-                        await this.gasEstimator.estimateGasPrice()
+                        gasPrice
                     );
                     
                     if (isProfitable) {
-                        await this.executeArbitrage(opportunity);
-                    } else {
-                        logger.debug('Opportunity not profitable after gas fees');
+                        await this.executeArbitrage(opportunity, isTriangular ? Strategy.TriangularArb : Strategy.SpatialArbitrage);
                     }
                 }
             } catch (error) {
-                logger.error(`Error processing token ${token}:`, error);
+                logger.error(`Error processing arbitrage for ${token}:`, error);
             }
+        }
+    }
+
+    /**
+     * Scan for liquidations
+     */
+    async scanLiquidations() {
+        try {
+            const liquidations = await this.liquidationMonitor.scanForOpportunities();
+            for (const liq of liquidations) {
+                this.stats.totalOpportunities++;
+                await this.executeLiquidation(liq);
+            }
+        } catch (error) {
+            logger.error('Error scanning for liquidations:', error);
+        }
+    }
+
+    /**
+     * Scan for UniswapX orders
+     */
+    async scanUniswapX() {
+        try {
+            const orders = await this.uniswapXMonitor.fetchOrders();
+            for (const order of orders) {
+                if (await this.uniswapXMonitor.isProfitable(order)) {
+                    this.stats.totalOpportunities++;
+                    await this.executeUniswapXFill(order);
+                }
+            }
+        } catch (error) {
+            logger.error('Error scanning for UniswapX orders:', error);
         }
     }
     
@@ -194,37 +323,71 @@ class ArbitrageBot {
     /**
      * Execute arbitrage trade
      */
-    async executeArbitrage(opportunity) {
-        logger.info('⚡ Executing arbitrage...', opportunity);
+    async executeArbitrage(opportunity, strategyType = Strategy.SpatialArbitrage) {
+        logger.info(`⚡ Executing ${strategyType === Strategy.TriangularArb ? 'Triangular Arb' : 'Spatial Arbitrage'}...`, opportunity);
         this.stats.executedTrades++;
         
         try {
-            // Calculate optimal trade amount
             const tradeAmount = await this.calculateOptimalTradeAmount(opportunity);
-            
-            // Get DEX router addresses
             const routers = this.getRouterAddresses(opportunity);
             
-            // Encode parameters for flashloan
-            const params = this.encodeArbitrageParams(opportunity, routers);
+            // New encoding format: (Strategy strategy, bytes strategyData)
+            const arbitrageData = this.encodeArbitrageData(opportunity, routers);
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [strategyType, arbitrageData]
+            );
             
-            // Get current gas price
             const gasPrice = await this.gasEstimator.estimateGasPrice();
             
-            // Execute flashloan arbitrage
+            // Select provider based on configuration
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
+
+            // 1. Simulate transaction (Static Call)
+            logger.info('🧪 Simulating transaction...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    opportunity.token,
+                    ethers.utils.parseEther(tradeAmount.toString()),
+                    provider,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 800000
+                    }
+                );
+                logger.info('✅ Simulation successful');
+            } catch (error) {
+                logger.warn(`❌ Simulation failed: ${error.message}`);
+                throw new Error(`Simulation failed: ${error.message}`);
+            }
+
+            // 2. Execute flashloan arbitrage
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(
+                    opportunity.token,
+                    ethers.utils.parseEther(tradeAmount.toString()),
+                    provider,
+                    params,
+                    800000,
+                    gasPrice
+                );
+                return;
+            }
+
             const tx = await this.arbitrageContract.executeArbitrage(
                 opportunity.token,
                 ethers.utils.parseEther(tradeAmount.toString()),
+                provider,
                 params,
                 {
                     gasPrice: gasPrice,
-                    gasLimit: 500000
+                    gasLimit: 800000
                 }
             );
             
             logger.info(`📝 Transaction submitted: ${tx.hash}`);
-            
-            // Wait for confirmation
             const receipt = await tx.wait();
             
             if (receipt.status === 1) {
@@ -330,38 +493,226 @@ class ArbitrageBot {
     }
     
     /**
-     * Encode parameters for flashloan callback
+     * Execute UniswapX Fill
      */
-    encodeArbitrageParams(opportunity, routers) {
+    async executeUniswapXFill(order) {
+        logger.info('⚡ Executing UniswapX Fill...', order.hash);
+        this.stats.executedTrades++;
+
+        try {
+            // Strategy 3: UniswapX Filling
+            // Source: Balancer (0% Fee)
+            // Hedge: 0x Protocol (Gas Efficient)
+            // Target: UniswapX (Atomic Profit)
+
+            const assetIn = order.inputToken;
+            const amountIn = order.inputAmount;
+            const assetOut = order.outputToken;
+
+            // In a real bot, you'd get the 0x quote here
+            const targetHedge = this.config.contracts.zeroXExchangeProxy;
+            const hedgeData = "0x..."; // Encoded 0x swap data
+
+            const strategyData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'bytes', 'address', 'bytes', 'address'],
+                [order.reactor, order.encodedOrder, targetHedge, hedgeData, assetOut]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.MirroringRFQ, strategyData]
+            );
+
+            const gasPrice = await this.gasEstimator.estimateGasPrice();
+
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
+
+            // Simulate UniswapX Fill
+            logger.info('🧪 Simulating UniswapX Fill...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    assetIn,
+                    amountIn,
+                    provider,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 1200000
+                    }
+                );
+                logger.info('✅ UniswapX simulation successful');
+            } catch (error) {
+                logger.warn(`❌ UniswapX simulation failed: ${error.message}`);
+                throw new Error(`UniswapX simulation failed: ${error.message}`);
+            }
+
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(assetIn, amountIn, provider, params, 1200000, gasPrice);
+                return;
+            }
+
+            const tx = await this.arbitrageContract.executeArbitrage(
+                assetIn,
+                amountIn,
+                provider,
+                params,
+                {
+                    gasPrice: gasPrice,
+                    gasLimit: 1200000
+                }
+            );
+
+            const receipt = await tx.wait();
+            if (receipt.status === 1) {
+                this.stats.successfulTrades++;
+                logger.info('✅ UniswapX Fill executed successfully!');
+            }
+        } catch (error) {
+            this.stats.failedTrades++;
+            logger.error('❌ UniswapX Fill execution failed:', error);
+        }
+    }
+
+    /**
+     * Execute liquidation
+     */
+    async executeLiquidation(liq) {
+        logger.info('⚡ Executing liquidation...', liq.user);
+        this.stats.executedTrades++;
+
+        try {
+            const debtAsset = liq.debtAsset;
+            const collateralAsset = liq.collateralAsset;
+            const debtAmount = liq.debtAmount;
+
+            const routers = [this.config.dexes.uniswapV2Router, this.config.dexes.sushiswapRouter];
+            const swapPath = [collateralAsset, debtAsset];
+            const fees = [3000];
+
+            const liquidationData = ethers.utils.defaultAbiCoder.encode(
+                ['address', 'address', 'address[]', 'address[]', 'uint24[]', 'bool'],
+                [collateralAsset, liq.user, swapPath, routers, fees, false]
+            );
+
+            const params = ethers.utils.defaultAbiCoder.encode(
+                ['uint8', 'bytes'],
+                [Strategy.Liquidation, liquidationData]
+            );
+
+            const gasPrice = await this.gasEstimator.estimateGasPrice();
+
+            const providerName = this.config.bot.defaultFlashLoanProvider;
+            const provider = providerName === 'sky' ? FlashLoanProvider.Sky : FlashLoanProvider.Balancer;
+
+            // Simulate liquidation
+            logger.info('🧪 Simulating liquidation...');
+            try {
+                await this.arbitrageContract.callStatic.executeArbitrage(
+                    debtAsset,
+                    debtAmount,
+                    provider,
+                    params,
+                    {
+                        gasPrice: gasPrice,
+                        gasLimit: 1000000
+                    }
+                );
+                logger.info('✅ Liquidation simulation successful');
+            } catch (error) {
+                logger.warn(`❌ Liquidation simulation failed: ${error.message}`);
+                throw new Error(`Liquidation simulation failed: ${error.message}`);
+            }
+
+            if (this.config.bot.useFlashbots && this.flashbotsProvider) {
+                await this.executeFlashbotsBundle(debtAsset, debtAmount, provider, params, 1000000, gasPrice);
+                return;
+            }
+
+            const tx = await this.arbitrageContract.executeArbitrage(
+                debtAsset,
+                debtAmount,
+                provider,
+                params,
+                {
+                    gasPrice: gasPrice,
+                    gasLimit: 1000000
+                }
+            );
+
+            const receipt = await tx.wait();
+            if (receipt.status === 1) {
+                this.stats.successfulTrades++;
+                logger.info('✅ Liquidation executed successfully!');
+            }
+        } catch (error) {
+            this.stats.failedTrades++;
+            logger.error('❌ Liquidation execution failed:', error);
+        }
+    }
+
+    /**
+     * Execute transaction via Flashbots bundle
+     */
+    async executeFlashbotsBundle(asset, amount, provider, params, gasLimit, gasPrice) {
+        const blockNumber = await this.provider.getBlockNumber();
+
+        const transaction = {
+            to: this.arbitrageContract.address,
+            data: this.arbitrageContract.interface.encodeFunctionData('executeArbitrage', [
+                asset,
+                amount,
+                provider,
+                params
+            ]),
+            gasPrice: gasPrice,
+            gasLimit: gasLimit,
+            chainId: this.config.network.chainId,
+            nonce: await this.wallet.getTransactionCount()
+        };
+
+        const signedTransaction = await this.wallet.signTransaction(transaction);
+
+        const bundle = [
+            {
+                signedTransaction: signedTransaction
+            }
+        ];
+
+        logger.info(`🚀 Submitting Flashbots bundle for block ${blockNumber + 1}...`);
+        const bundleSubmission = await this.flashbotsProvider.sendBundle(bundle, blockNumber + 1);
+
+        if ('error' in bundleSubmission) {
+            throw new Error(`Flashbots error: ${bundleSubmission.error.message}`);
+        }
+
+        const waitResponse = await bundleSubmission.wait();
+        if (waitResponse === 0) {
+            this.stats.successfulTrades++;
+            logger.info('✅ Flashbots bundle included!');
+        } else if (waitResponse === 1) {
+            throw new Error('Flashbots bundle not included (nonce too high or not profitable for miner)');
+        } else {
+            throw new Error('Flashbots bundle simulation failed or skipped');
+        }
+    }
+
+    /**
+     * Encode arbitrage data
+     */
+    encodeArbitrageData(opportunity, routers) {
         const wrappedNative = this.config.tokens.wrappedNative || this.config.tokens.weth || this.config.tokens.wbnb;
-        const path = [
-            opportunity.token,
-            wrappedNative,
-            opportunity.token
-        ];
+        const path = [opportunity.token, wrappedNative, opportunity.token];
+        const routerAddresses = [routers.buyRouter, routers.sellRouter];
         
-        const routerAddresses = [
-            routers.buyRouter,
-            routers.sellRouter
-        ];
-        
-        // Determine fee tiers based on DEX configuration
         const dexesFull = this.config.dexesFull || {};
         const buyDex = dexesFull[opportunity.buyDex];
         const sellDex = dexesFull[opportunity.sellDex];
         
-        // Default to 0.3% (3000) for Uniswap V3, but use chain-specific defaults
         let buyFee = 3000;
         let sellFee = 3000;
-        
-        // Convert fee percentage to fee tier
-        // 0.05% = 500, 0.2% = 2000, 0.25% = 2500, 0.3% = 3000, 1% = 10000
-        if (buyDex && buyDex.fee) {
-            buyFee = Math.round(buyDex.fee * 10000);
-        }
-        if (sellDex && sellDex.fee) {
-            sellFee = Math.round(sellDex.fee * 10000);
-        }
+        if (buyDex && buyDex.fee) buyFee = Math.round(buyDex.fee * 10000);
+        if (sellDex && sellDex.fee) sellFee = Math.round(sellDex.fee * 10000);
         
         const fees = [buyFee, sellFee];
         

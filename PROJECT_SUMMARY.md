@@ -61,7 +61,8 @@ ethereum-mev-bot/
     ├── 📄 STRATEGY.md                    # Strategy guide (detailed)
     ├── 📄 SETUP.md                       # Setup guide (comprehensive)
     ├── 📄 API.md                         # API documentation
-    └── 📄 UML_DIAGRAMS.md                # System architecture diagrams
+    ├── 📄 UML_DIAGRAMS.md                # System architecture diagrams
+    └── 📄 BEST_USAGE.md                  # Optimal profit configuration
 ```
 
 ---

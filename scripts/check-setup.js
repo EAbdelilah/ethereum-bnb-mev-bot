@@ -198,7 +198,6 @@ async function verifySetup() {
         'Check interval too low (min 100ms)'
     );
     
-    const nativeSymbol = config.chain.nativeCurrency.symbol;
     console.log(`   Min Profit: ${config.bot.minProfitThreshold} ${nativeSymbol}`);
     console.log(`   Max Gas: ${config.bot.maxGasPrice} gwei`);
     console.log(`   Interval: ${config.bot.checkInterval}ms`);

@@ -17,7 +17,7 @@
 
 *Supports Ethereum & BNB Chain | Zero Capital Required | Production-Ready MEV Trading Bot*
 
-[Features](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Multi-Chain Setup](#-multi-chain-setup) • [UML Diagrams](#-uml-diagrams) • [Services](#-professional-services) • [Roadmap](#-roadmap)
+[Best Usage (Read This!)](docs/BEST_USAGE.md) • [Features](#-features) • [Architecture](#-architecture) • [Quick Start](#-quick-start) • [Multi-Chain Setup](#-multi-chain-setup) • [UML Diagrams](#-uml-diagrams) • [Services](#-professional-services) • [Roadmap](#-roadmap)
 
 ---
 
@@ -135,7 +135,7 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 - 🔄 **Cross-DEX Arbitrage**: Exploits price differences across multiple DEXes
   - **Ethereum**: Uniswap V2, Uniswap V3, SushiSwap
   - **BNB Chain**: PancakeSwap V2, PancakeSwap V3, Biswap, ApeSwap
-- ⚡ **Flashloan Technology**: Uses Aave V3 (Ethereum) and configurable providers (BNB Chain) for zero-capital trading
+- ⚡ **Flashloan Technology**: Uses 0% fee providers (Balancer V2, Sky/MakerDAO) for zero-capital trading
 - 📊 **Real-time Multi-Chain Monitoring**: Continuous price scanning via RPC/WebSocket
 - 🎯 **Automated Execution**: Smart contract-based atomic transactions
 - 🛡️ **Risk-Free Design**: All-or-nothing execution ensures no partial losses
@@ -147,10 +147,12 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 **MEV (Maximal Extractable Value)** refers to the profit that can be extracted by reordering, including, or excluding transactions within blocks. Our **multi-chain MEV bot** focuses specifically on **arbitrage MEV** - the most stable and ethical form of **MEV extraction**. Unlike sandwich bots or liquidation bots, this **arbitrage MEV bot** provides value to the ecosystem through price discovery.
 
 **MEV bot strategies** include:
-- **Arbitrage MEV**: Price differences across DEXes (this bot's focus)
-- **Sandwich Trading**: Front-running and back-running large swaps
+- **Mirroring (RFQ)**: Capturing stable spreads using 0x aggregate
+- **Spatial Arbitrage**: Price gaps between DEXs and aggregators
 - **Liquidation MEV**: Liquidating under-collateralized positions
-- **NFT MEV**: Arbitrage on NFT marketplaces
+- **Collateral Swap**: Portfolio rebalancing within active loans
+- **Triangular Arb**: Price gaps within a single DEX loop
+- **Self-Liquidation**: Debt repayment to save penalty fees
 
 ### Why Use This Multi-Chain MEV Bot for Arbitrage?
 
@@ -178,7 +180,7 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
 |---------|-------------|--------|
 | **Multi-Chain Support** | Ethereum & BNB Chain (Binance Smart Chain) | ✅ Active |
 | **Multi-DEX Arbitrage** | Uniswap V2/V3, SushiSwap (Ethereum) • PancakeSwap V2/V3, Biswap, ApeSwap (BNB Chain) | ✅ Active |
-| **Flashloan Integration** | Aave V3 (Ethereum) • Configurable providers (BNB Chain) | ✅ Active |
+| **Flashloan Integration** | Balancer V2, Sky (0% fee) | ✅ Active |
 | **Real-time Monitoring** | WebSocket-based multi-chain price tracking | ✅ Active |
 | **Gas Optimization** | Dynamic gas estimation with EIP-1559 | ✅ Active |
 | **Chain-Specific Configuration** | Automatic chain detection and configuration | ✅ Active |
@@ -253,9 +255,9 @@ This **MEV bot** supports **multiple blockchains** and specializes in **cross-DE
         │           │           │
         ▼           ▼           ▼
 ┌──────────┐  ┌──────────┐  ┌──────────┐
-│  Aave V3 │  │ Pancake  │  │   Other  │
-│ Ethereum │  │  BNB     │  │ Providers│
-│ Flashloan│  │ Flashloan│  │  BNB     │
+│ Balancer │  │   Sky    │  │ Pancake  │
+│    V2    │  │ (Maker)  │  │ Flashloan│
+│ (0% Fee) │  │ (0% Fee) │  │ (0% Fee) │
 └──────────┘  └──────────┘  └──────────┘
 ```
 
@@ -362,7 +364,7 @@ graph TD
    └─> Ensure MEV opportunity is profitable after all costs
 
 3. MEV BOT EXECUTES (Atomic Transaction)
-   └─> Request flashloan (Aave on Ethereum, configurable on BNB Chain)
+   └─> Request 0% fee flashloan (Balancer or Sky)
    └─> Buy tokens on cheaper DEX
    └─> Sell tokens on expensive DEX
    └─> Repay flashloan + fee
@@ -385,16 +387,16 @@ MEV Opportunity Detected by Bot:
 • WETH on SushiSwap: $2010 (0.5% price difference)
 
 MEV Bot Execution on Ethereum Mainnet:
-1. MEV Bot initiates flashloan: Borrow 10 ETH from Aave (no collateral required)
+1. MEV Bot initiates flashloan: Borrow 10 ETH from Balancer (0% fee, no collateral)
 2. MEV Bot buys: 10 ETH worth of USDC on Uniswap (~$20,000)
 3. MEV Bot sells: $20,000 USDC for ETH on SushiSwap (~10.05 ETH)
-4. MEV Bot repays: 10.009 ETH to Aave (10 + 0.09% fee)
-5. MEV Bot profit: 0.041 ETH (~$82) minus gas fees
+4. MEV Bot repays: 10.0 ETH to Balancer (10 + 0% fee)
+5. MEV Bot profit: 0.05 ETH (~$100) minus gas fees
 
 Ethereum MEV Bot Costs:
 - Uniswap swap fee: 0.3% = 0.03 ETH
 - SushiSwap swap fee: 0.3% = 0.03 ETH  
-- Aave flashloan fee: 0.09% = 0.009 ETH
+- Flashloan fee: 0% = 0.000 ETH
 - Ethereum gas: ~0.015 ETH (at 50 gwei)
 
 Net MEV Profit: ~$60-80 per arbitrage trade
@@ -735,6 +737,7 @@ Support Ethereum MEV development:
 - **[🚀 MEV Bot Setup Guide](docs/SETUP.md)**: Step-by-step MEV bot installation
 - **[📚 API Documentation](docs/API.md)**: Complete MEV bot API reference
 - **[📐 UML Diagrams](docs/UML_DIAGRAMS.md)**: MEV bot system architecture and design
+- **[🏆 Best Usage Guide](docs/BEST_USAGE.md)**: Optimal configuration for maximum profit
 - **[⚡ Quick Start](QUICKSTART.md)**: Deploy your MEV bot in 10 minutes
 
 ### MEV Bot Quick Reference Links
@@ -759,8 +762,7 @@ Support Ethereum MEV development:
   - Ethereum: Uniswap V2, Uniswap V3, SushiSwap
   - BNB Chain: PancakeSwap V2, PancakeSwap V3, Biswap, ApeSwap
 - [x] ✅ **Flashloan Integration**: 
-  - Aave V3 on Ethereum
-  - Configurable providers on BNB Chain
+  - Balancer V2 & Sky (0% fee)
 - [x] ✅ **Real-time Price Monitoring**: WebSocket connection to multiple chains
 - [x] ✅ **Gas Optimization**: EIP-1559 support and dynamic gas pricing (both chains)
 - [x] ✅ **Smart Contract**: Auditable Solidity 0.8.19 contract (deployable on both chains)
@@ -1180,6 +1182,23 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
+## 🛡️ Security & Risk Assessment (Read Before Using)
+
+### Is this a "Sure" Bot?
+**No.** There is no such thing as a "sure" or guaranteed profit bot in DeFi or MEV. While this bot is technically robust and implements advanced strategies, you must understand the following:
+
+1.  **Extreme Competition**: MEV is a "Red Ocean." You are competing against institutional-grade bots, some of which have direct partnerships with miners/validators.
+2.  **Gas Risk**: Even with 0% fee flash loans, you still pay for network gas. In high-traffic periods, gas costs can exceed the arbitrage profit, leading to a net loss.
+3.  **Front-running**: Competitors monitor the public mempool. They may see your profitable transaction and "copy" it with a higher gas price, stealing the opportunity. (We recommend using **Flashbots** to mitigate this).
+4.  **No Profit Guarantees**: Arbitrage opportunities depend on market volatility. In stable markets, there may be no profitable trades for days.
+
+### Safety First
+-   **Never use your primary wallet**: Always create a dedicated "hot wallet" for the bot with only the funds required for gas.
+-   **Test on Testnet**: We have provided a full test suite and support for Goerli/Sepolia. **Do not deploy to Mainnet** until you have seen consistent successful simulations on a testnet.
+-   **Audit the Code**: This bot is open-source. We have audited it for common "scam" patterns (like hardcoded backdoors), but you should always perform your own due diligence.
+
+---
+
 ## ⚠️ Disclaimer
 
 **IMPORTANT: READ CAREFULLY**
@@ -1188,21 +1207,20 @@ This software is provided for **educational and research purposes** regarding ME
 
 ### Risk Disclosure
 
-- ❌ **Financial Risk**: Trading on Ethereum, BNB Chain, or any blockchain involves substantial risk of loss
-- ❌ **No Guarantees**: Past performance does not guarantee future results
-- ❌ **Market Risk**: Blockchain and DeFi markets are highly volatile
-- ❌ **Technical Risk**: Software bugs or network issues can cause losses
-- ❌ **Gas Risk**: High gas prices (especially on Ethereum) can eliminate profits
-- ❌ **Competition**: MEV is highly competitive on all chains
-- ❌ **Chain-Specific Risks**: Each chain has unique risks and considerations
-- ❌ **Smart Contract Risk**: Bugs in smart contracts can result in total loss
+- ❌ **Financial Risk**: Trading on Ethereum, BNB Chain, or any blockchain involves substantial risk of loss. **Capital at risk is limited to gas fees paid.**
+- ❌ **No Guarantees**: Past performance does not guarantee future results.
+- ❌ **Market Risk**: Blockchain and DeFi markets are highly volatile.
+- ❌ **Technical Risk**: Software bugs or network issues can cause losses.
+- ❌ **Gas Risk**: High gas prices (especially on Ethereum) can eliminate profits.
+- ❌ **Competition**: MEV is highly competitive on all chains.
+- ❌ **Smart Contract Risk**: Bugs in smart contracts can result in total loss of funds held within the contract.
 
 ### Legal Disclaimer
 
-- This is **NOT financial advice**
-- Authors are **NOT responsible** for any losses on any chain
-- Users must comply with local laws regarding blockchain trading
-- **USE AT YOUR OWN RISK**
+- This is **NOT financial advice**.
+- Authors are **NOT responsible** for any losses on any chain.
+- Users must comply with local laws regarding blockchain trading.
+- **USE AT YOUR OWN RISK.**
 
 ### Best Practices for Multi-Chain Trading
 
@@ -1225,7 +1243,7 @@ This software is provided for **educational and research purposes** regarding ME
 |---------|-------------------------|----------------|
 | **Open Source** | ✅ Fully open source | ❌ Often closed/obfuscated |
 | **Multi-Chain Support** | ✅ Ethereum & BNB Chain | ❌ Single chain only |
-| **Flashloan Support** | ✅ Aave V3 (Ethereum) + Configurable (BNB Chain) | ⚠️ Limited or paid only |
+| **Flashloan Support** | ✅ Balancer & Sky (0% Fee Only) | ⚠️ Limited or paid only |
 | **Documentation** | ✅ 100+ pages of docs | ❌ Minimal/none |
 | **Active Development** | ✅ Regular updates | ❌ Abandoned projects |
 | **Multi-DEX** | ✅ Uniswap, SushiSwap (Ethereum) • PancakeSwap, Biswap (BNB Chain) | ⚠️ Single DEX only |
@@ -1269,7 +1287,7 @@ This repository ranks for: **multi-chain mev bot**, **ethereum mev bot**, **bnb 
 
 **Tags:** `Multi-Chain MEV Bot` • `Ethereum MEV Bot` • `BNB Chain MEV Bot` • `BSC MEV Bot` • `Ethereum Arbitrage` • `BNB Arbitrage` • `Flashloan Bot` • `DeFi Trading Bot` • `Uniswap Arbitrage` • `PancakeSwap Arbitrage` • `Ethereum Trading` • `BNB Chain Trading` • `MEV Strategies` • `Open Source MEV` • `GitHub MEV Bot`
 
-**Multi-Chain Support** • **Ethereum Mainnet** • **BNB Chain Mainnet** • **Solidity 0.8.19** • **Aave V3 Flashloans** • **Uniswap V2/V3** • **SushiSwap** • **PancakeSwap V2/V3** • **Biswap** • **ApeSwap** • **Web3.js** • **Hardhat**
+**Multi-Chain Support** • **Ethereum Mainnet** • **BNB Chain Mainnet** • **Solidity 0.8.20** • **0% Fee Flashloans** • **Uniswap V2/V3** • **SushiSwap** • **PancakeSwap V2/V3** • **Biswap** • **ApeSwap** • **Web3.js** • **Hardhat**
 
 ---
 
